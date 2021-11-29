@@ -13,6 +13,7 @@ Plugin 'sheerun/vim-polyglot'
 Plugin 'scheakur/vim-scheakur'
 Plugin 'jiangmiao/auto-pairs'
 Plugin 'preservim/nerdtree'
+Plugin 'dense-analysis/ale'
 
 call vundle#end()
 filetype plugin indent on
@@ -79,6 +80,10 @@ set noerrorbells visualbell t_vb=
 set termwinsize=12x0    " Set terminal size
 set mouse+=a             " Enable mouse drag on window splits
 
+" open new split panes to right and bottom, which feels more natural
+set splitbelow
+set splitright
+
 set background=dark        
 colorscheme scheakur
 
@@ -88,9 +93,33 @@ nnoremap <C-k> <C-w>k
 nnoremap <C-h> <C-w>h
 nnoremap <C-l> <C-w>l
 
-" open new split panes to right and bottom, which feels more natural
-set splitbelow
-set splitright
+" shortcut for jumping to the next error in ale
+nmap <silent> <C-e> <Plug>(ale_next_wrap)
+
+" dispay number of errors and warnings in status line (ale)
+function! LinterStatus() abort
+    let l:counts = ale#statusline#Count(bufnr(''))
+
+    let l:all_errors = l:counts.error + l:counts.style_error
+    let l:all_non_errors = l:counts.total - l:all_errors
+
+    return l:counts.total == 0 ? 'OK' : printf(
+            \   '%d⨉ %d⚠ ',
+            \   all_non_errors,
+            \   all_errors
+            \)
+endfunction
+
+set statusline+=%=
+set statusline+=\ %{LinterStatus()}
+
+" disable linting when opening, enable when saving
+" let g:ale_lint_on_enter = 0
+" let g:ale_lint_on_save = 1
+
+" change the symbols for error, warning
+let g:ale_sign_error = '●'
+let g:ale_sign_warning = '.'
 
 let g:AutoPairsShortcutToggle = '<C-P>'
 
