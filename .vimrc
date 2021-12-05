@@ -87,6 +87,19 @@ set splitright
 set background=dark        
 colorscheme scheakur
 
+" Show “invisible” characters
+set lcs=tab:▸\ ,trail:·,eol:¬,nbsp:_
+set list
+
+" Don't reset cursor to start of line when moving around.
+set nostartofline
+
+" Show the cursor position
+set ruler
+
+" Show the filename in the window titlebar
+set title
+
 " quicker window movement
 nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
@@ -121,6 +134,11 @@ set statusline+=\ %{LinterStatus()}
 let g:ale_sign_error = '●'
 let g:ale_sign_warning = '.'
 
+let g:ale_linters = {'cpp': ['cc']}
+
+let g:ale_completion_enabled = 1
+set omnifunc=ale#completion#OmniFunc
+
 let g:AutoPairsShortcutToggle = '<C-P>'
 
 let NERDTreeShowBookmarks = 1   " Show the bookmarks table
@@ -130,5 +148,24 @@ let NERDTreeMinimalMenu = 1     " Use the minimal menu (m)
 let NERDTreeWinPos = 'left'     " Panel opens on the left side
 let NERDTreeWinSize = 31        " Set panel width to 31 columns
 
-nmap <F2> :NERDTreeToggle<CR>
+" open/close NERDTree(\f)
+nmap <Leader>f :NERDTreeToggle<CR>
 
+nnoremap <silent> <Leader>v :NERDTreeFind<CR>
+
+" close when opening file
+let NERDTreeQuitOnOpen = 1
+
+" Close the tab if NERDTree is the only window remaining in it.
+autocmd BufEnter * if winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() | quit | endif
+
+" open NERDTree when starting vim with no arguments
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+
+" auto delete buffer when deleting with nerdTree
+let NERDTreeAutoDeleteBuffer = 1
+
+" make it prettier
+let NERDTreeMinimalUI = 1
+let NERDTreeDirArrows = 2
