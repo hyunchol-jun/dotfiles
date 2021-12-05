@@ -1,0 +1,14 @@
+[user]
+	name = Hyunchol Jun
+	email = hyunchol.jun@gmail.com
+[init]
+	defaultBranch = main
+[color]
+	ui = auto
+	status = always
+[core]
+	editor = vim
+[alias]
+	co = checkout
+	ci = commit
+	br = branch
