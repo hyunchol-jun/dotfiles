@@ -1,21 +1,5 @@
 set nocompatible 
-filetype off
 
-" Set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
-
-" Download plug-ins to the ~/.vim/plugged/ directory
-call vundle#begin('~/.vim/plugged')
-
-" Let Vundle manage Vundle
-Plugin 'VundleVim/Vundle.vim'
-Plugin 'sheerun/vim-polyglot'
-Plugin 'scheakur/vim-scheakur'
-Plugin 'jiangmiao/auto-pairs'
-Plugin 'preservim/nerdtree'
-Plugin 'dense-analysis/ale'
-
-call vundle#end()
 filetype plugin indent on
 
 set nu	    " Enable line numbers
@@ -83,9 +67,6 @@ set mouse+=a             " Enable mouse drag on window splits
 " open new split panes to right and bottom, which feels more natural
 set splitbelow
 set splitright
-
-set background=dark        
-colorscheme scheakur
 
 " Show “invisible” characters
 set lcs=tab:▸\ ,trail:·,eol:¬,nbsp:_
