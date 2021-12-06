@@ -7,6 +7,9 @@ set relativenumber
 syntax on	" Enable syntax highlighting
 set showmatch " show matching braces when text indicator is over them
 
+colorscheme iceberg
+set background=dark
+
 " highlight current line, but only in active window
 augroup CursorLineOnlyInActiveWindow
     autocmd!
