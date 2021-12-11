@@ -12,6 +12,7 @@
     ~/.zshrc: zshrc
     ~/.gitconfig: gitconfig
     ~/.config: config
+    ~/.hammerspoon: hammerspoon
 
 - shell:
     - [git submodule update --init --recursive, Installing submodules]
