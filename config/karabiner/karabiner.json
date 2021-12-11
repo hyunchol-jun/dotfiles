@@ -25,221 +25,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "left_shift",
-                                        "modifiers": [
-                                            "left_command",
-                                            "left_control",
-                                            "left_option"
-                                        ]
+                                        "key_code": "left_control",
+                                        "modifiers": []
                                     }
                                 ],
                                 "to_if_alone": [
                                     {
                                         "key_code": "escape"
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "description": "Avoid starting sysdiagnose with the built-in macOS shortcut cmd+shift+option+ctrl+,",
-                                "from": {
-                                    "key_code": "comma",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "command",
-                                            "shift",
-                                            "option",
-                                            "control"
-                                        ]
-                                    }
-                                },
-                                "to": [],
-                                "type": "basic"
-                            },
-                            {
-                                "description": "Avoid starting sysdiagnose with the built-in macOS shortcut cmd+shift+option+ctrl+.",
-                                "from": {
-                                    "key_code": "period",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "command",
-                                            "shift",
-                                            "option",
-                                            "control"
-                                        ]
-                                    }
-                                },
-                                "to": [],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "description": "Avoid starting sysdiagnose with the built-in macOS shortcut cmd+shift+option+ctrl+/",
-                                    "key_code": "slash",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "command",
-                                            "shift",
-                                            "option",
-                                            "control"
-                                        ]
-                                    }
-                                },
-                                "to": [],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Hyper + i/j/k/l == vim directional Keys",
-                        "manipulators": [
-                            {
-                                "from": {
-                                    "key_code": "k",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "left_shift",
-                                            "left_command",
-                                            "left_control",
-                                            "left_option"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "up_arrow"
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "h",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "left_shift",
-                                            "left_command",
-                                            "left_control",
-                                            "left_option"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "left_arrow"
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "j",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "left_shift",
-                                            "left_command",
-                                            "left_control",
-                                            "left_option"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "down_arrow"
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "l",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "left_shift",
-                                            "left_command",
-                                            "left_control",
-                                            "left_option"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "right_arrow"
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "semicolon",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "left_shift",
-                                            "left_command",
-                                            "left_control",
-                                            "left_option"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "right_arrow",
-                                        "modifiers": [
-                                            "left_command"
-                                        ]
-                                    }
-                                ],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Toggle caps_lock by pressing left_shift then right_shift",
-                        "manipulators": [
-                            {
-                                "from": {
-                                    "key_code": "left_shift",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "right_shift"
-                                        ],
-                                        "optional": [
-                                            "caps_lock"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "caps_lock"
-                                    }
-                                ],
-                                "to_if_alone": [
-                                    {
-                                        "key_code": "left_shift"
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "right_shift",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "left_shift"
-                                        ],
-                                        "optional": [
-                                            "caps_lock"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "caps_lock"
-                                    }
-                                ],
-                                "to_if_alone": [
-                                    {
-                                        "key_code": "right_shift"
                                     }
                                 ],
                                 "type": "basic"
@@ -313,374 +105,407 @@
                         ]
                     },
                     {
-                      "description": "O-Launcher",
-                      "manipulators": [
-                        {
-                          "type": "basic",
-                          "from": {
-                            "key_code": "n",
-                            "modifiers": {
-                              "mandatory": [
-
-                              ],
-                              "optional": [
-                                "any"
-                              ]
-                            }
-                          },
-                          "to": [
+                        "description": "O-Launcher",
+                        "manipulators": [
                             {
-                              "shell_command": "open -a 'Notes.app'"
-                            }
-                          ],
-                          "conditions": [
-                            {
-                              "type": "variable_if",
-                              "name": "launcher_mode",
-                              "value": 1
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "from": {
-                            "simultaneous": [
-                              {
-                                "key_code": "o"
-                              },
-                              {
-                                "key_code": "n"
-                              }
-                            ],
-                            "simultaneous_options": {
-                              "key_down_order": "strict",
-                              "key_up_order": "strict_inverse",
-                              "to_after_key_up": [
-                                {
-                                  "set_variable": {
-                                    "name": "launcher_mode",
-                                    "value": 0
-                                  }
-                                }
-                              ]
-                            },
-                            "modifiers": {
-                              "mandatory": [
-
-                              ],
-                              "optional": [
-                                "any"
-                              ]
-                            }
-                          },
-                          "to": [
-                            {
-                              "set_variable": {
-                                "name": "launcher_mode",
-                                "value": 1
-                              }
+                                "conditions": [
+                                    {
+                                        "name": "launcher_mode",
+                                        "type": "variable_if",
+                                        "value": 1
+                                    }
+                                ],
+                                "from": {
+                                    "key_code": "n",
+                                    "modifiers": {
+                                        "mandatory": [],
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'Notes.app'"
+                                    }
+                                ],
+                                "type": "basic"
                             },
                             {
-                              "shell_command": "open -a 'Notes.app'"
-                            }
-                          ],
-                          "parameters": {
-                            "basic.simultaneous_threshold_milliseconds": 500
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "from": {
-                            "key_code": "t",
-                            "modifiers": {
-                              "mandatory": [
-
-                              ],
-                              "optional": [
-                                "any"
-                              ]
-                            }
-                          },
-                          "to": [
-                            {
-                              "shell_command": "open -a 'Terminal.app'"
-                            }
-                          ],
-                          "conditions": [
-                            {
-                              "type": "variable_if",
-                              "name": "launcher_mode",
-                              "value": 1
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "from": {
-                            "simultaneous": [
-                              {
-                                "key_code": "o"
-                              },
-                              {
-                                "key_code": "t"
-                              }
-                            ],
-                            "simultaneous_options": {
-                              "key_down_order": "strict",
-                              "key_up_order": "strict_inverse",
-                              "to_after_key_up": [
-                                {
-                                  "set_variable": {
-                                    "name": "launcher_mode",
-                                    "value": 0
-                                  }
-                                }
-                              ]
-                            },
-                            "modifiers": {
-                              "mandatory": [
-
-                              ],
-                              "optional": [
-                                "any"
-                              ]
-                            }
-                          },
-                          "to": [
-                            {
-                              "set_variable": {
-                                "name": "launcher_mode",
-                                "value": 1
-                              }
+                                "from": {
+                                    "modifiers": {
+                                        "mandatory": [],
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    },
+                                    "simultaneous": [
+                                        {
+                                            "key_code": "o"
+                                        },
+                                        {
+                                            "key_code": "n"
+                                        }
+                                    ],
+                                    "simultaneous_options": {
+                                        "key_down_order": "strict",
+                                        "key_up_order": "strict_inverse",
+                                        "to_after_key_up": [
+                                            {
+                                                "set_variable": {
+                                                    "name": "launcher_mode",
+                                                    "value": 0
+                                                }
+                                            }
+                                        ]
+                                    }
+                                },
+                                "parameters": {
+                                    "basic.simultaneous_threshold_milliseconds": 500
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "launcher_mode",
+                                            "value": 1
+                                        }
+                                    },
+                                    {
+                                        "shell_command": "open -a 'Notes.app'"
+                                    }
+                                ],
+                                "type": "basic"
                             },
                             {
-                              "shell_command": "open -a 'Terminal.app'"
-                            }
-                          ],
-                          "parameters": {
-                            "basic.simultaneous_threshold_milliseconds": 500
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "from": {
-                            "key_code": "c",
-                            "modifiers": {
-                              "mandatory": [
-
-                              ],
-                              "optional": [
-                                "any"
-                              ]
-                            }
-                          },
-                          "to": [
-                            {
-                              "shell_command": "open -a 'google chrome.app'"
-                            }
-                          ],
-                          "conditions": [
-                            {
-                              "type": "variable_if",
-                              "name": "launcher_mode",
-                              "value": 1
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "from": {
-                            "simultaneous": [
-                              {
-                                "key_code": "o"
-                              },
-                              {
-                                "key_code": "c"
-                              }
-                            ],
-                            "simultaneous_options": {
-                              "key_down_order": "strict",
-                              "key_up_order": "strict_inverse",
-                              "to_after_key_up": [
-                                {
-                                  "set_variable": {
-                                    "name": "launcher_mode",
-                                    "value": 0
-                                  }
-                                }
-                              ]
-                            },
-                            "modifiers": {
-                              "mandatory": [
-
-                              ],
-                              "optional": [
-                                "any"
-                              ]
-                            }
-                          },
-                          "to": [
-                            {
-                              "set_variable": {
-                                "name": "launcher_mode",
-                                "value": 1
-                              }
+                                "conditions": [
+                                    {
+                                        "name": "launcher_mode",
+                                        "type": "variable_if",
+                                        "value": 1
+                                    }
+                                ],
+                                "from": {
+                                    "key_code": "t",
+                                    "modifiers": {
+                                        "mandatory": [],
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'Terminal.app'"
+                                    }
+                                ],
+                                "type": "basic"
                             },
                             {
-                              "shell_command": "open -a 'google chrome.app'"
-                            }
-                          ],
-                          "parameters": {
-                            "basic.simultaneous_threshold_milliseconds": 500
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "from": {
-                            "key_code": "d",
-                            "modifiers": {
-                              "mandatory": [
-
-                              ],
-                              "optional": [
-                                "any"
-                              ]
-                            }
-                          },
-                          "to": [
-                            {
-                              "shell_command": "open -a 'Dictionary.app'"
-                            }
-                          ],
-                          "conditions": [
-                            {
-                              "type": "variable_if",
-                              "name": "launcher_mode",
-                              "value": 1
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "from": {
-                            "simultaneous": [
-                              {
-                                "key_code": "o"
-                              },
-                              {
-                                "key_code": "d"
-                              }
-                            ],
-                            "simultaneous_options": {
-                              "key_down_order": "strict",
-                              "key_up_order": "strict_inverse",
-                              "to_after_key_up": [
-                                {
-                                  "set_variable": {
-                                    "name": "launcher_mode",
-                                    "value": 0
-                                  }
-                                }
-                              ]
-                            },
-                            "modifiers": {
-                              "mandatory": [
-
-                              ],
-                              "optional": [
-                                "any"
-                              ]
-                            }
-                          },
-                          "to": [
-                            {
-                              "set_variable": {
-                                "name": "launcher_mode",
-                                "value": 1
-                              }
+                                "from": {
+                                    "modifiers": {
+                                        "mandatory": [],
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    },
+                                    "simultaneous": [
+                                        {
+                                            "key_code": "o"
+                                        },
+                                        {
+                                            "key_code": "t"
+                                        }
+                                    ],
+                                    "simultaneous_options": {
+                                        "key_down_order": "strict",
+                                        "key_up_order": "strict_inverse",
+                                        "to_after_key_up": [
+                                            {
+                                                "set_variable": {
+                                                    "name": "launcher_mode",
+                                                    "value": 0
+                                                }
+                                            }
+                                        ]
+                                    }
+                                },
+                                "parameters": {
+                                    "basic.simultaneous_threshold_milliseconds": 500
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "launcher_mode",
+                                            "value": 1
+                                        }
+                                    },
+                                    {
+                                        "shell_command": "open -a 'Terminal.app'"
+                                    }
+                                ],
+                                "type": "basic"
                             },
                             {
-                              "shell_command": "open -a 'Dictionary.app'"
-                            }
-                          ],
-                          "parameters": {
-                            "basic.simultaneous_threshold_milliseconds": 500
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "from": {
-                            "key_code": "m",
-                            "modifiers": {
-                              "mandatory": [
-
-                              ],
-                              "optional": [
-                                "any"
-                              ]
-                            }
-                          },
-                          "to": [
-                            {
-                              "shell_command": "open -a 'Messages.app'"
-                            }
-                          ],
-                          "conditions": [
-                            {
-                              "type": "variable_if",
-                              "name": "launcher_mode",
-                              "value": 1
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "from": {
-                            "simultaneous": [
-                              {
-                                "key_code": "o"
-                              },
-                              {
-                                "key_code": "m"
-                              }
-                            ],
-                            "simultaneous_options": {
-                              "key_down_order": "strict",
-                              "key_up_order": "strict_inverse",
-                              "to_after_key_up": [
-                                {
-                                  "set_variable": {
-                                    "name": "launcher_mode",
-                                    "value": 0
-                                  }
-                                }
-                              ]
-                            },
-                            "modifiers": {
-                              "mandatory": [
-
-                              ],
-                              "optional": [
-                                "any"
-                              ]
-                            }
-                          },
-                          "to": [
-                            {
-                              "set_variable": {
-                                "name": "launcher_mode",
-                                "value": 1
-                              }
+                                "conditions": [
+                                    {
+                                        "name": "launcher_mode",
+                                        "type": "variable_if",
+                                        "value": 1
+                                    }
+                                ],
+                                "from": {
+                                    "key_code": "c",
+                                    "modifiers": {
+                                        "mandatory": [],
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'google chrome.app'"
+                                    }
+                                ],
+                                "type": "basic"
                             },
                             {
-                              "shell_command": "open -a 'Messages.app'"
+                                "from": {
+                                    "modifiers": {
+                                        "mandatory": [],
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    },
+                                    "simultaneous": [
+                                        {
+                                            "key_code": "o"
+                                        },
+                                        {
+                                            "key_code": "c"
+                                        }
+                                    ],
+                                    "simultaneous_options": {
+                                        "key_down_order": "strict",
+                                        "key_up_order": "strict_inverse",
+                                        "to_after_key_up": [
+                                            {
+                                                "set_variable": {
+                                                    "name": "launcher_mode",
+                                                    "value": 0
+                                                }
+                                            }
+                                        ]
+                                    }
+                                },
+                                "parameters": {
+                                    "basic.simultaneous_threshold_milliseconds": 500
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "launcher_mode",
+                                            "value": 1
+                                        }
+                                    },
+                                    {
+                                        "shell_command": "open -a 'google chrome.app'"
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "launcher_mode",
+                                        "type": "variable_if",
+                                        "value": 1
+                                    }
+                                ],
+                                "from": {
+                                    "key_code": "d",
+                                    "modifiers": {
+                                        "mandatory": [],
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'Dictionary.app'"
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "modifiers": {
+                                        "mandatory": [],
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    },
+                                    "simultaneous": [
+                                        {
+                                            "key_code": "o"
+                                        },
+                                        {
+                                            "key_code": "d"
+                                        }
+                                    ],
+                                    "simultaneous_options": {
+                                        "key_down_order": "strict",
+                                        "key_up_order": "strict_inverse",
+                                        "to_after_key_up": [
+                                            {
+                                                "set_variable": {
+                                                    "name": "launcher_mode",
+                                                    "value": 0
+                                                }
+                                            }
+                                        ]
+                                    }
+                                },
+                                "parameters": {
+                                    "basic.simultaneous_threshold_milliseconds": 500
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "launcher_mode",
+                                            "value": 1
+                                        }
+                                    },
+                                    {
+                                        "shell_command": "open -a 'Dictionary.app'"
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "launcher_mode",
+                                        "type": "variable_if",
+                                        "value": 1
+                                    }
+                                ],
+                                "from": {
+                                    "key_code": "m",
+                                    "modifiers": {
+                                        "mandatory": [],
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'Messages.app'"
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "modifiers": {
+                                        "mandatory": [],
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    },
+                                    "simultaneous": [
+                                        {
+                                            "key_code": "o"
+                                        },
+                                        {
+                                            "key_code": "m"
+                                        }
+                                    ],
+                                    "simultaneous_options": {
+                                        "key_down_order": "strict",
+                                        "key_up_order": "strict_inverse",
+                                        "to_after_key_up": [
+                                            {
+                                                "set_variable": {
+                                                    "name": "launcher_mode",
+                                                    "value": 0
+                                                }
+                                            }
+                                        ]
+                                    }
+                                },
+                                "parameters": {
+                                    "basic.simultaneous_threshold_milliseconds": 500
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "launcher_mode",
+                                            "value": 1
+                                        }
+                                    },
+                                    {
+                                        "shell_command": "open -a 'Messages.app'"
+                                    }
+                                ],
+                                "type": "basic"
                             }
-                          ],
-                          "parameters": {
-                            "basic.simultaneous_threshold_milliseconds": 500
-                          }
-                        }
-                      ]
+                        ]
+                    },
+                    {
+                        "description": "Toggle caps_lock by pressing left_shift then right_shift",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "key_code": "left_shift",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "right_shift"
+                                        ],
+                                        "optional": [
+                                            "caps_lock"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "caps_lock"
+                                    }
+                                ],
+                                "to_if_alone": [
+                                    {
+                                        "key_code": "left_shift"
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "right_shift",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift"
+                                        ],
+                                        "optional": [
+                                            "caps_lock"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "caps_lock"
+                                    }
+                                ],
+                                "to_if_alone": [
+                                    {
+                                        "key_code": "right_shift"
+                                    }
+                                ],
+                                "type": "basic"
+                            }
+                        ]
                     }
                 ]
             },
@@ -812,7 +637,18 @@
                 "delay_milliseconds_before_open_device": 1000
             },
             "selected": true,
-            "simple_modifications": [],
+            "simple_modifications": [
+                {
+                    "from": {
+                        "key_code": "left_control"
+                    },
+                    "to": [
+                        {
+                            "key_code": "caps_lock"
+                        }
+                    ]
+                }
+            ],
             "virtual_hid_keyboard": {
                 "country_code": 0,
                 "indicate_sticky_modifier_keys_state": true,
