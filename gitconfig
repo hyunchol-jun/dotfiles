@@ -8,6 +8,7 @@
 	status = always
 [core]
 	editor = vim
+	pager = less -F -X
 [alias]
 	co = checkout
 	ci = commit
