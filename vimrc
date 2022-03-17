@@ -81,14 +81,14 @@ set nostartofline
 " Show the cursor position
 set ruler
 
-" Show the filename in the window titlebar
-set title
-
 " quicker window movement
 nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-h> <C-w>h
 nnoremap <C-l> <C-w>l
+
+" shortcut for emptying search result to make highlights disappear
+nnoremap \\ :let @/=""<CR>
 
 " shortcut for jumping to the next error in ale
 nmap <silent> <C-e> <Plug>(ale_next_wrap)
@@ -109,6 +109,9 @@ endfunction
 
 set statusline+=%=
 set statusline+=\ %{LinterStatus()}
+
+" Show the filename in the window titlebar
+set title
 
 " disable linting when opening, enable when saving
 " let g:ale_lint_on_enter = 0
