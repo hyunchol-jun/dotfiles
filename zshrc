@@ -109,3 +109,4 @@ alias ll="ls -lah"
 alias gs="git status"
 alias mv="mv -i"
 alias "gll"="git log --graph --pretty=oneline --abbrev-commit"
+alias python=python3
