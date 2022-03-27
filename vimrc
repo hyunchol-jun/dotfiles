@@ -42,6 +42,9 @@ set smartcase
 " open
 set laststatus=2
 
+" Show the filename in the window titlebar
+set title
+
 " Use 4 spaces instead of tabs during formatting
 set expandtab
 set tabstop=4
@@ -93,26 +96,6 @@ nnoremap \\ :let @/=""<CR>
 " shortcut for jumping to the next error in ale
 nmap <silent> <C-e> <Plug>(ale_next_wrap)
 
-" dispay number of errors and warnings in status line (ale)
-function! LinterStatus() abort
-    let l:counts = ale#statusline#Count(bufnr(''))
-
-    let l:all_errors = l:counts.error + l:counts.style_error
-    let l:all_non_errors = l:counts.total - l:all_errors
-
-    return l:counts.total == 0 ? 'OK' : printf(
-            \   '%d⨉ %d⚠ ',
-            \   all_non_errors,
-            \   all_errors
-            \)
-endfunction
-
-set statusline+=%=
-set statusline+=\ %{LinterStatus()}
-
-" Show the filename in the window titlebar
-set title
-
 " disable linting when opening, enable when saving
 " let g:ale_lint_on_enter = 0
 " let g:ale_lint_on_save = 1
@@ -136,9 +119,7 @@ let NERDTreeWinPos = 'left'     " Panel opens on the left side
 let NERDTreeWinSize = 31        " Set panel width to 31 columns
 
 " open/close NERDTree(\f)
-nmap <Leader>f :NERDTreeToggle<CR>
-
-nnoremap <silent> <Leader>v :NERDTreeFind<CR>
+nnoremap <Leader>f :NERDTreeToggle<CR>
 
 " close when opening file
 let NERDTreeQuitOnOpen = 1
