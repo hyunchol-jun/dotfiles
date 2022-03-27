@@ -1,6 +1,11 @@
 set nocompatible 
 
+" Turn on 'detection', 'plugin', 'indent' at once
 filetype plugin indent on
+
+" Indent javascript, css inside html tags properly
+let g:html_indent_script1 = "inc" 
+let g:html_indent_style1 = "inc" 
 
 set nu	    " Enable line numbers
 set relativenumber 
