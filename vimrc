@@ -1,14 +1,14 @@
-set nocompatible 
+set nocompatible
 
 " Turn on 'detection', 'plugin', 'indent' at once
 filetype plugin indent on
 
 " Indent javascript, css inside html tags properly
-let g:html_indent_script1 = "inc" 
-let g:html_indent_style1 = "inc" 
+let g:html_indent_script1 = "inc"
+let g:html_indent_style1 = "inc"
 
 set nu	    " Enable line numbers
-set relativenumber 
+set relativenumber
 syntax on	" Enable syntax highlighting
 set showmatch " show matching braces when text indicator is over them
 
@@ -61,7 +61,7 @@ set wildmode=longest,list
 set wildmenu
 
 " Enable searching as you type, rather than waiting till you press enter.
-set incsearch	
+set incsearch
 set hlsearch	" Enable highlight search
 
 set scrolloff=5 " show lines above and below cursor (when possible)
@@ -109,7 +109,20 @@ nmap <silent> <C-e> <Plug>(ale_next_wrap)
 let g:ale_sign_error = '●'
 let g:ale_sign_warning = '.'
 
-let g:ale_linters = {'cpp': ['cc']}
+let g:ale_linters = {
+\    'cpp': ['cc'],
+\    'python': ['flake8'],
+\}
+
+" Only run linters named in ale_linters settings.
+let g:ale_linters_explicit = 1
+
+let g:ale_fixers = {
+\    '*': ['remove_trailing_lines', 'trim_whitespace'],
+\    'python': ['black', 'isort'],
+\}
+
+let g:ale_fix_on_save = 1
 
 let g:ale_completion_enabled = 1
 set omnifunc=ale#completion#OmniFunc
