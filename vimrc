@@ -3,6 +3,11 @@ set nocompatible
 " Turn on 'detection', 'plugin', 'indent' at once
 filetype plugin indent on
 
+" Indent style, script tags in html file
+let g:html_indent_script1 = "inc"
+let g:html_indent_style1 = "inc"
+let g:html_indent_inctags = "script"
+
 set nu	    " Enable line numbers
 set relativenumber
 syntax on	" Enable syntax highlighting
