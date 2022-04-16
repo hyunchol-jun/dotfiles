@@ -128,7 +128,9 @@ let g:ale_fix_on_save = 1
 let g:ale_completion_enabled = 1
 set omnifunc=ale#completion#OmniFunc
 
-let g:AutoPairsShortcutToggle = '<C-P>'
+" let g:AutoPairsShortcutToggle = '<C-P>'
+let g:ctrlp_map = '<c-p>'
+let g:ctrlp_cmd = 'CtrlP'
 
 let NERDTreeShowBookmarks = 1   " Show the bookmarks table
 let NERDTreeShowHidden = 1      " Show hidden files

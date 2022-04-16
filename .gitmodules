@@ -3,7 +3,7 @@
 	url = https://github.com/anishathalye/dotbot
 [submodule "vim/pack/vender/start/auto-pairs"]
 	path = vim/pack/vender/start/auto-pairs
-	url = git://github.com/jiangmiao/auto-pairs.git
+	url = https://github.com/jiangmiao/auto-pairs.git
 [submodule "vim/pack/vender/start/ale"]
 	path = vim/pack/vender/start/ale
 	url = https://github.com/dense-analysis/ale.git
@@ -13,3 +13,6 @@
 [submodule "vim/pack/vender/start/vim-polyglot"]
 	path = vim/pack/vender/start/vim-polyglot
 	url = https://github.com/sheerun/vim-polyglot.git
+[submodule "vim/pack/vender/start/ctrlp.vim"]
+	path = vim/pack/vender/start/ctrlp.vim
+	url = https://github.com/kien/ctrlp.vim.git
