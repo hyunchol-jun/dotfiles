@@ -1,2 +1,7 @@
 .DS_Store
 *automatic_backups*
+
+config/Jackett/
+config/qbittorrent/
+config/black
+config/.mono/
