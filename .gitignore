@@ -5,3 +5,4 @@ config/Jackett/
 config/qbittorrent/
 config/black
 config/.mono/
+config/nvim/plugin/
