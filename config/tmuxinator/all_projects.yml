@@ -4,12 +4,6 @@ name: all_projects
 root: ~/
 
 windows:
-  - Chicken:
-      layout: even-horizontal
-      root: ~/projects/boom-chicken
-      panes:
-        - npm start
-        - nvim
   - BE-Client:
       layout: even-horizontal
       root: ~/BrainStation/better-eat-client
@@ -34,9 +28,34 @@ windows:
       panes:
         - jekyll serve
         - nvim
-
-
-
+  - Chicken-gatsby:
+      layout: even-horizontal
+      root: ~/projects/boom-chicken-gatsby/
+      panes:
+        - gatsby develop
+        - nvim
+  - Portfolio:
+      layout: even-horizontal
+      root: ~/projects/
+      panes:
+        - bundle exec jekyll serve --port 4001
+        - nvim
+  - dotfiles:
+      layout: even-horizontal
+      root: ~/dotfiles/
+      panes:
+        - nvim
+  - Rust:
+      layout: even-horizontal
+      root: ~/projects/Rust_Practice/
+      panes:
+        - nvim
+  - CV:
+      layout: even-horizontal
+      root: ~/projects/markdown-cv/
+      panes:
+        - jekyll serve
+        - nvim
 # Optional tmux socket
 # socket_name: foo
 
