@@ -45,6 +45,17 @@ windows:
       root: ~/dotfiles/
       panes:
         - nvim
+  - vimwiki:
+      layout: even-horizontal
+      root: ~/Library/Mobile Documents/iCloud~md~obsidian/Documents/vimwiki/
+      panes:
+        - nvim
+  - Mynance:
+      layout: even-horizontal
+      root: ~/projects/mynance/
+      panes:
+        - npm run dev
+        - nvim
 # Optional tmux socket
 # socket_name: foo
 

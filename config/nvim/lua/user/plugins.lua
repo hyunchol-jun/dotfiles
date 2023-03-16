@@ -94,9 +94,10 @@ return packer.startup(function(use)
 		config = function()
 			vim.g.vimwiki_list = {
 				{
-					path = "~/Documents/vimwiki/",
+					path = "~/Library/Mobile Documents/iCloud~md~obsidian/Documents/vimwiki/",
 					syntax = "markdown",
 					ext = ".md",
+					links_space_char = "_",
 				},
 			}
 		end,
