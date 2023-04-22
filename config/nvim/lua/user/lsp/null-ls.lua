@@ -13,6 +13,7 @@ local augroup = vim.api.nvim_create_augroup("LspFormatting", {})
 null_ls.setup({
 	debug = false,
 	sources = {
+		formatting.prettier.with({ extra_args = {}, disabled_filetypes = { "markdown" } }),
 		formatting.black.with({ extra_args = { "--fast" } }),
 		formatting.stylua,
 		formatting.rustfmt,

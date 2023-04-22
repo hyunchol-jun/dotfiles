@@ -7,7 +7,7 @@
 	ui = auto
 	status = always
 [core]
-	editor = vim
+	editor = nvim
 	pager = less -F -X
 [alias]
 	co = checkout

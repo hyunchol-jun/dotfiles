@@ -115,12 +115,12 @@ source /opt/homebrew/opt/chruby/share/chruby/auto.sh
 chruby ruby-3.1.2
 export EDITOR='nvim'
 
-# Added for React Native, related to Ruby
-eval "$(rbenv init - zsh)"
-
 # Added for Android development
 export ANDROID_HOME=$HOME/Library/Android/sdk
 export PATH=$PATH:$ANDROID_HOME/emulator
 export PATH=$PATH:$ANDROID_HOME/tools
 export PATH=$PATH:$ANDROID_HOME/tools/bin
 export PATH=$PATH:$ANDROID_HOME/platform-tools
+
+# Set AWS profile to PoplarML
+# export AWS_PROFILE=poplar

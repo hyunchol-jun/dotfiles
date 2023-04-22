@@ -1,5 +1,4 @@
 local servers = {
-	"sumneko_lua",
 	"pyright",
 	"tsserver",
 	"html",
