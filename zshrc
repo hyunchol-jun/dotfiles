@@ -124,3 +124,22 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 
 # Set AWS profile to PoplarML
 # export AWS_PROFILE=poplar
+
+
+# Switch nvim configuration
+alias nvim-lazy="NVIM_APPNAME=LazyVim nvim"
+alias nvim-kick="NVIM_APPNAME=kickstart nvim"
+
+function nvims() {
+  items=("default" "kickstart" "LazyVim")
+  config=$(printf "%s\n" "${items[@]}" | fzf --prompt=" Neovim Config  " --height=~50% --layout=reverse --border --exit-0)
+  if [[ -z $config ]]; then
+    echo "Nothing selected"
+    return 0
+  elif [[ $config == "default" ]]; then
+    config=""
+  fi
+  NVIM_APPNAME=$config nvim $@
+}
+
+bindkey -s ^a "nvims\n"
