@@ -98,7 +98,7 @@ source $ZSH/oh-my-zsh.sh
 # For a full list of active aliases, run `alias`.
 #
 # Example aliases
-# alias zshconfig="mate ~/.zshrc"
+# alias zshconfig="mate ~/."
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 # Vim functionality enabled
@@ -107,13 +107,14 @@ bindkey -v
 # Aliases
 alias ll="ls -lah"
 alias gs="git status"
+alias gdt="git difftool --tool=vimdiff -y"
 alias mv="mv -i"
 alias "gll"="git log --graph --pretty=oneline --abbrev-commit"
 alias python=python3
 source /opt/homebrew/opt/chruby/share/chruby/chruby.sh
 source /opt/homebrew/opt/chruby/share/chruby/auto.sh
 chruby ruby-3.1.2
-export EDITOR='nvim'
+export EDITOR='vim'
 
 # Added for Android development
 export ANDROID_HOME=$HOME/Library/Android/sdk
@@ -125,13 +126,16 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 # Set AWS profile to PoplarML
 # export AWS_PROFILE=poplar
 
+export AWS_PROFILE=dev-developer
 
 # Switch nvim configuration
 alias nvim-lazy="NVIM_APPNAME=LazyVim nvim"
 alias nvim-kick="NVIM_APPNAME=kickstart nvim"
+alias nvim-chad="NVIM_APPNAME=NvChad nvim"
+alias vim="nvim-chad"
 
 function nvims() {
-  items=("default" "kickstart" "LazyVim")
+  items=("default" "kickstart" "LazyVim" "NvChad")
   config=$(printf "%s\n" "${items[@]}" | fzf --prompt=" Neovim Config  " --height=~50% --layout=reverse --border --exit-0)
   if [[ -z $config ]]; then
     echo "Nothing selected"

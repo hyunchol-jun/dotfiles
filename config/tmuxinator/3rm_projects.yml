@@ -1,61 +1,21 @@
-# /Users/hyuncholjun/.config/tmuxinator/all_projects.yml
+# /Users/hyuncholjun/.config/tmuxinator/3rm_projects.yml
 
-name: all_projects
-root: ~/
+name: 3rm_projects
+root: ~/3RM/
 
 windows:
-  - BE-Client:
+  - 3RM-Portal:
       layout: even-horizontal
-      root: ~/BrainStation/better-eat-client
+      root: ~/3RM/3rm-portal/
       panes:
         - npm start
-        - nvim
-  - BE-Server:
+        - vim
+  - 3RM-Service-Gateway:
       layout: even-horizontal
-      root: ~/BrainStation/better-eat-server
-      panes:
-        - npx nodemon server.js
-        - nvim
-  - LeetCode:
-      layout: even-horizontal
-      root: ~/LeetCode/
-      panes:
-        - nvim
-        - pwd
-  - Resume:
-      layout: even-horizontal
-      root: ~/projects/markdown-cv
-      panes:
-        - jekyll serve
-        - nvim
-  - Chicken-gatsby:
-      layout: even-horizontal
-      root: ~/projects/boom-chicken-gatsby/
-      panes:
-        - gatsby develop
-        - nvim
-  - Portfolio:
-      layout: even-horizontal
-      root: ~/projects/hyunchol-jun.github.io/
-      panes:
-        - bundle exec jekyll serve --port 4001
-        - nvim
-  - dotfiles:
-      layout: even-horizontal
-      root: ~/dotfiles/
-      panes:
-        - nvim
-  - vimwiki:
-      layout: even-horizontal
-      root: ~/Library/Mobile Documents/iCloud~md~obsidian/Documents/vimwiki/
-      panes:
-        - nvim
-  - Mynance:
-      layout: even-horizontal
-      root: ~/projects/mynance/
+      root: ~/3RM/3rm-service-gateway/
       panes:
         - npm run dev
-        - nvim
+        - vim
 # Optional tmux socket
 # socket_name: foo
 

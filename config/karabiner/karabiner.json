@@ -131,7 +131,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "open -a 'Terminal.app'"
+                                        "shell_command": "open -a 'Alacritty.app'"
                                     }
                                 ],
                                 "type": "basic"
@@ -176,7 +176,7 @@
                                         }
                                     },
                                     {
-                                        "shell_command": "open -a 'Terminal.app'"
+                                        "shell_command": "open -a 'Alacritty.app'"
                                     }
                                 ],
                                 "type": "basic"
