@@ -8,3 +8,5 @@ config/.mono/
 config/configstore/
 config/poplar-cli/
 config/stripe/
+config/gatsby
+config/grammarly-languageserver
