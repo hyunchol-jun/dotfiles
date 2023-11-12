@@ -132,7 +132,7 @@ export AWS_PROFILE=dev-developer
 alias nvim-lazy="NVIM_APPNAME=LazyVim nvim"
 alias nvim-kick="NVIM_APPNAME=kickstart nvim"
 alias nvim-chad="NVIM_APPNAME=NvChad nvim"
-alias vim="nvim-chad"
+alias vim="nvim-lazy"
 
 function nvims() {
   items=("default" "kickstart" "LazyVim" "NvChad")
