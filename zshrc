@@ -123,16 +123,13 @@ export PATH=$PATH:$ANDROID_HOME/tools
 export PATH=$PATH:$ANDROID_HOME/tools/bin
 export PATH=$PATH:$ANDROID_HOME/platform-tools
 
-# Set AWS profile to PoplarML
-# export AWS_PROFILE=poplar
-
-export AWS_PROFILE=dev-developer
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
 
 # Switch nvim configuration
 alias nvim-lazy="NVIM_APPNAME=LazyVim nvim"
 alias nvim-kick="NVIM_APPNAME=kickstart nvim"
 alias nvim-chad="NVIM_APPNAME=NvChad nvim"
-alias vim="nvim-lazy"
+alias vim="nvim-kick"
 
 function nvims() {
   items=("default" "kickstart" "LazyVim" "NvChad")
@@ -147,3 +144,16 @@ function nvims() {
 }
 
 bindkey -s ^a "nvims\n"
+
+export SOPS_AGE_KEY_FILE=~/Implentio/implentio-local-dev-key.txt
+
+# Created by `pipx` on 2024-05-01 01:05:58
+export PATH="$PATH:/Users/hyuncholjun/.local/bin"
+
+# Nix related
+export PATH="$NIX_LINK/bin:/nix/var/nix/profiles/default/bin:$PATH"
+export PATH="$HOME/.nix-profile/bin:$PATH"
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"

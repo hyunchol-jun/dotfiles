@@ -5,6 +5,9 @@ return {
       servers = {
         tailwindcss = {},
       },
+      inlay_hints = {
+        enabled = false,
+      },
     },
   },
   {
