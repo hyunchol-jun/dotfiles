@@ -1,20 +1,18 @@
-# /Users/hyuncholjun/.config/tmuxinator/3rm_projects.yml
+# /Users/hyuncholjun/.config/tmuxinator/implentio.yml
 
-name: 3rm_projects
-root: ~/3RM/
+name: Implentio
+root: ~/Implentio/
 
 windows:
-  - 3RM-Portal:
+  - implentio-app:
       layout: even-horizontal
-      root: ~/3RM/3rm-portal/
+      root: ~/Implentio/implentio-app/
       panes:
-        - npm start
         - vim
-  - 3RM-Service-Gateway:
+  - reconciliation-engine:
       layout: even-horizontal
-      root: ~/3RM/3rm-service-gateway/
+      root: ~/Implentio/reconciliation-engine/
       panes:
-        - npm run dev
         - vim
 # Optional tmux socket
 # socket_name: foo
