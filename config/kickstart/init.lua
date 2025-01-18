@@ -98,11 +98,16 @@ vim.g.have_nerd_font = true
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
 
--- Make line numbers default
 vim.opt.number = true
--- You can also add relative line numbers, to help with jumping.
---  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
+
+vim.keymap.set('n', '<leader>tlr', function()
+  vim.opt.relativenumber = true
+end, { desc = '[T]oggle [L]elative number [R]elative' })
+
+vim.keymap.set('n', '<leader>tla', function()
+  vim.opt.relativenumber = false
+end, { desc = '[T]oggle [L]elative number [A]bsolute' })
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -357,13 +362,6 @@ require('lazy').setup({
       -- This opens a window that shows you all of the keymaps for the current
       -- Telescope picker. This is really useful to discover what Telescope can
       -- do as well as how to actually do it!
-      require('git-worktree').setup {
-        change_directory_command = 'cd', -- default: "cd",
-        update_on_change = true, -- default: true,
-        update_on_change_command = 'e .', -- default: "e .",
-        clearjumps_on_change = true, -- default: true,
-        autopush = false, -- default: false,
-      }
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
       require('telescope').setup {
@@ -399,14 +397,6 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
-      vim.keymap.set('n', '<leader>gws', "<CMD>lua require('telescope').extensions.git_worktree.git_worktrees()<CR>", { desc = '[G]it [W]orktree [S]witch' })
-      vim.keymap.set(
-        'n',
-        '<leader>gwc',
-        "<CMD>lua require('telescope').extensions.git_worktree.create_git_worktree()<CR>",
-        { desc = '[G]it [W]orktree [C]reate' }
-      )
-      -- Ctrl-D deletes a worktree
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
@@ -625,7 +615,7 @@ require('lazy').setup({
         kotlin_language_server = {},
         ktlint = {},
 
-        ts_ls = {},
+        -- ts_ls = {},
         tailwindcss = {},
         prismals = {},
 
@@ -689,6 +679,28 @@ require('lazy').setup({
         mode = '',
         desc = '[F]ormat buffer',
       },
+      {
+        '<leader>tf',
+        function()
+          if vim.g.disable_autoformat then
+            vim.g.disable_autoformat = false
+          else
+            vim.g.disable_autoformat = true
+          end
+        end,
+        desc = '[T]oggle auto [F]ormat',
+      },
+      {
+        '<leader>tfb',
+        function()
+          if vim.b.disable_autoformat then
+            vim.b.disable_autoformat = false
+          else
+            vim.b.disable_autoformat = true
+          end
+        end,
+        desc = '[T]oggle auto [F]ormat for this [B]uffer',
+      },
     },
     opts = {
       notify_on_error = false,
@@ -703,6 +715,12 @@ require('lazy').setup({
         else
           lsp_format_opt = 'fallback'
         end
+
+        -- Disable with a global or buffer-local variable
+        if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
+          return
+        end
+
         return {
           timeout_ms = 500,
           lsp_format = lsp_format_opt,
@@ -712,10 +730,20 @@ require('lazy').setup({
         lua = { 'stylua' },
         kotlin = { 'ktlint' },
         -- Conform can also run multiple formatters sequentially
-        python = { 'isort', 'black' },
-        --
+        python = { 'isort' },
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        -- For some reason, using 'prettierd' with git worktree doesn't respect .prettierrc
+        -- javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        javascript = { 'prettier' },
+        css = { 'prettier' },
+        html = { 'prettier' },
+        json = { 'prettier' },
+        yaml = { 'prettier' },
+        markdown = { 'prettier' },
+        graphql = { 'prettier' },
+        nix = { 'nixfmt' },
+        go = { 'goimports', 'gofmt', stop_after_first = true },
+        rust = { 'rustfmt', lsp_format = 'fallback', stop_after_first = true },
       },
     },
   },
@@ -874,6 +902,7 @@ require('lazy').setup({
       -- - sd'   - [S]urround [D]elete [']quotes
       -- - sr)'  - [S]urround [R]eplace [)] [']
       require('mini.surround').setup()
+      require('mini.pairs').setup()
 
       -- Simple and easy statusline.
       --  You could remove this setup call if you don't like it,
