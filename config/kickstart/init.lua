@@ -690,17 +690,6 @@ require('lazy').setup({
         end,
         desc = '[T]oggle auto [F]ormat',
       },
-      {
-        '<leader>tfb',
-        function()
-          if vim.b.disable_autoformat then
-            vim.b.disable_autoformat = false
-          else
-            vim.b.disable_autoformat = true
-          end
-        end,
-        desc = '[T]oggle auto [F]ormat for this [B]uffer',
-      },
     },
     opts = {
       notify_on_error = false,
