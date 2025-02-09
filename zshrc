@@ -111,9 +111,6 @@ alias gdt="git difftool --tool=vimdiff -y"
 alias mv="mv -i"
 alias "gll"="git log --graph --pretty=oneline --abbrev-commit"
 alias python=python3
-source /opt/homebrew/opt/chruby/share/chruby/chruby.sh
-source /opt/homebrew/opt/chruby/share/chruby/auto.sh
-chruby ruby-3.1.2
 export EDITOR='vim'
 
 # Added for Android development
