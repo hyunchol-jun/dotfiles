@@ -3,7 +3,7 @@
 export PATH=~/bin:~/Library/Python/3.8/bin:~/Library/Python/3.9/bin:/usr/local/mysql/bin:$PATH
 
 # Path to your oh-my-zsh installation.
-export ZSH="/Users/hyuncholjun/.oh-my-zsh"
+export ZSH="~/.oh-my-zsh"
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
@@ -127,7 +127,7 @@ alias v="nvim"
 export SOPS_AGE_KEY_FILE=~/Implentio/implentio-local-dev-key.txt
 
 # Created by `pipx` on 2024-05-01 01:05:58
-export PATH="$PATH:/Users/hyuncholjun/.local/bin"
+export PATH="$PATH:~/.local/bin"
 
 # Nix related
 export PATH="$NIX_LINK/bin:/nix/var/nix/profiles/default/bin:$PATH"
