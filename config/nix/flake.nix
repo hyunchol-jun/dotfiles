@@ -27,6 +27,7 @@
 	  pkgs.jetbrains.idea-community-bin
 	  pkgs.dbeaver-bin
 	  pkgs.stow
+	  pkgs.tldr
         ];
       
       homebrew = {
@@ -40,6 +41,10 @@
 	  "opal-composer"
 	  "docker"
 	];
+	masApps = {
+	    "KakaoTalk" = 869223134;
+	    "Xcode" = 497799835;
+	  };
 	onActivation.cleanup = "zap";
 	onActivation.autoUpdate = true;
 	onActivation.upgrade = true;
@@ -77,15 +82,14 @@
 	loginwindow.GuestEnabled = false;
 	finder.FXPreferredViewStyle = "clmv";
 	NSGlobalDomain.AppleInterfaceStyle = "Dark";
-	NSGlobalDomain.InitialKeyRepeat = 1;
-	NSGlobalDomain.KeyRepeat = 1;
+	NSGlobalDomain.KeyRepeat = 2;
 	NSGlobalDomain._HIHideMenuBar = true;
 	NSGlobalDomain.AppleKeyboardUIMode = 3;
 	NSGlobalDomain.AppleShowAllExtensions = true;
 	NSGlobalDomain.AppleShowAllFiles = true;
 	NSGlobalDomain.NSAutomaticWindowAnimationsEnabled = false;
 	trackpad.Clicking = true;
-	universalaccess.reduceMotion = true;
+	# universalaccess.reduceMotion = true;
       };
       # Auto upgrade nix package and the daemon service.
       services.nix-daemon.enable = true;
