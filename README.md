@@ -1,6 +1,6 @@
 # dotfiles
 This is my dotfiles repo using [dotbot](https://github.com/anishathalye/dotbot). 
-I manage the configuration files of the programs I use in this repo. 
+I manage the configuration files of the programs I use.
 You can clone & install this repo, and all the configuration files will be in the newly installed system.
 
 ## Installation
@@ -11,11 +11,9 @@ You can clone & install this repo, and all the configuration files will be in th
 $ cd dotfiles
 $ ./install
 ```
-## Configured programs
+This repo also houses nix config for mac. Install it by either:
+`darwin-rebuild switch --flake $(readlink -f ~/.config/nix/flake.nix)#mini`
 
-### Vim
-### Zsh
-### Tmux
-### Hammerspoon
-### Karabiner
+or
 
+`nix run nix-darwin --extra-experimental-features "nix-command flakes" -- switch --flake $(readlink -f ~/.config/nix)#mini`
