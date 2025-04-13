@@ -620,8 +620,8 @@ require('lazy').setup({
         --
         terraformls = {},
 
-        kotlin_language_server = {},
-        ktlint = {},
+        -- kotlin_language_server = {}, commenting out as it takes up too much memory
+        -- ktlint = {},
 
         -- ts_ls = {},
         tailwindcss = {},
