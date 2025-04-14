@@ -869,10 +869,23 @@ require('lazy').setup({
     'folke/tokyonight.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     init = function()
+      local host = vim.fn.hostname()
+      local colorscheme = ""
+
+      if string.find(host, "MacBook") then
+        colorscheme = "tokyonight-night"
+      elseif string.find(host, "mini1") then
+        colorscheme = "tokyonight-day"
+      elseif string.find(host, "mini2") then
+        colorscheme = "tokyonight-storm"
+      else
+        colorscheme = "tokyonight-night"
+      end
+
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme(colorscheme)
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
