@@ -30,6 +30,8 @@
 	  pkgs.tldr
 	  pkgs.oh-my-zsh
 	  pkgs.lazygit
+	  pkgs.nodejs_22
+	  pkgs.postgresql_14
         ];
       
       homebrew = {
