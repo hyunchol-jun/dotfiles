@@ -17,3 +17,6 @@ This repo also houses nix config for mac. Install it by either:
 or
 
 `nix run nix-darwin --extra-experimental-features "nix-command flakes" -- switch --flake $(readlink -f ~/.config/nix)#mini`
+
+Nix update
+`nix flake update`
