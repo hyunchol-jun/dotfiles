@@ -38,6 +38,7 @@
         enable = true;
 	brews = [
 	  "mas"
+	  "pnpm"
 	];
 	casks = [
 	  "karabiner-elements"
