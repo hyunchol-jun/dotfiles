@@ -28,6 +28,10 @@
 	  pkgs.dbeaver-bin
 	  pkgs.stow
 	  pkgs.tldr
+	  pkgs.oh-my-zsh
+	  pkgs.lazygit
+	  pkgs.nodejs_22
+	  pkgs.postgresql_14
         ];
       
       homebrew = {
@@ -91,8 +95,6 @@
 	trackpad.Clicking = true;
 	# universalaccess.reduceMotion = true;
       };
-      # Auto upgrade nix package and the daemon service.
-      services.nix-daemon.enable = true;
       # nix.package = pkgs.nix;
 
       # Necessary for using flakes on this system.
