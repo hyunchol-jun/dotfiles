@@ -18,5 +18,17 @@ or
 
 `nix run nix-darwin --extra-experimental-features "nix-command flakes" -- switch --flake $(readlink -f ~/.config/nix)#mini`
 
+## After install
 Nix update
 `nix flake update`
+
+Tmux plugin manager
+1. Clone the repo
+```
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+```
+2. Reload config file
+```
+# type this in terminal if tmux is already running
+tmux source ~/.tmux.conf
+```
