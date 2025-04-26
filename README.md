@@ -11,7 +11,14 @@ You can clone & install this repo, and all the configuration files will be in th
 $ cd dotfiles
 $ ./install
 ```
-This repo also houses nix config for mac. Install it by either:
+This repo also houses nix config for mac. 
+First, you'd need to install nix package manager onto your system.
+
+```
+sh <(curl -L https://nixos.org/nix/install)
+```
+
+Then:
 `darwin-rebuild switch --flake $(readlink -f ~/.config/nix/flake.nix)#mini`
 
 or
