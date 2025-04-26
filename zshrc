@@ -123,6 +123,7 @@ alias gdt="git difftool --tool=vimdiff -y"
 alias mv="mv -i"
 alias "gll"="git log --graph --pretty=oneline --abbrev-commit"
 alias python=python3
+alias pip=pip3
 export EDITOR='vim'
 
 # Added for Android development
