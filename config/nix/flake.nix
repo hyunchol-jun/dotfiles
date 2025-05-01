@@ -39,6 +39,7 @@
 	brews = [
 	  "mas"
 	  "pnpm"
+	  "docker-compose"
 	];
 	casks = [
 	  "karabiner-elements"
