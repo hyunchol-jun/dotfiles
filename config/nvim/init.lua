@@ -875,7 +875,7 @@ require('lazy').setup({
       if string.find(host, "MacBook") then
         colorscheme = "duskfox"
       elseif string.find(host, "mini1") then
-        colorscheme = "dayfox"
+        colorscheme = "terafox"
       elseif string.find(host, "mini2") then
         colorscheme = "carbonfox"
       else
