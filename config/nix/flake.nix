@@ -32,6 +32,7 @@
 	  pkgs.lazygit
 	  pkgs.nodejs_22
 	  pkgs.postgresql_14
+	  pkgs.typescript
         ];
       
       homebrew = {
