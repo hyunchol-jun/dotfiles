@@ -70,3 +70,4 @@ if [[ -f ~/.api_keys ]]; then
 fi
 
 source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+bindkey '^y' autosuggest-accept
