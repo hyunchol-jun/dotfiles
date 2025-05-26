@@ -27,6 +27,8 @@ alias mv="mv -i"
 alias "gll"="git log --graph --pretty=oneline --abbrev-commit"
 alias python=python3
 alias pip=pip3
+alias v="nvim"
+
 export EDITOR='vim'
 
 # Added for Android development
@@ -37,8 +39,6 @@ export PATH=$PATH:$ANDROID_HOME/tools/bin
 export PATH=$PATH:$ANDROID_HOME/platform-tools
 
 export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home
-
-alias v="nvim"
 
 export SOPS_AGE_KEY_FILE=~/Implentio/implentio-local-dev-key.txt
 
@@ -60,7 +60,7 @@ export NVM_DIR="$HOME/.nvm"
 # For direnv to work properly it needs to be hooked into the shell.
 eval "$(direnv hook zsh)"
 
-# Only source if the file exists
+# Load file storing api keys for things like AI
 if [[ -f ~/.api_keys ]]; then
   source ~/.api_keys
 fi
