@@ -35,6 +35,8 @@
 	  pkgs.typescript
 	  pkgs.ripgrep
 	  pkgs.direnv
+	  pkgs.zoxide
+	  pkgs.fzf
         ];
       
       homebrew = {
