@@ -43,6 +43,7 @@
 	  "mas"
 	  "pnpm"
 	  "docker-compose"
+	  "jandedobbeleer/oh-my-posh/oh-my-posh"
 	];
 	casks = [
 	  "karabiner-elements"
