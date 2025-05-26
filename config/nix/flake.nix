@@ -34,6 +34,7 @@
 	  pkgs.postgresql_14
 	  pkgs.typescript
 	  pkgs.ripgrep
+	  pkgs.direnv
         ];
       
       homebrew = {
