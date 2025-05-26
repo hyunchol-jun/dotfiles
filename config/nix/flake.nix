@@ -46,6 +46,7 @@
 	  "pnpm"
 	  "docker-compose"
 	  "jandedobbeleer/oh-my-posh/oh-my-posh"
+	  "zsh-autosuggestions"
 	];
 	casks = [
 	  "karabiner-elements"

@@ -68,3 +68,5 @@ eval "$(direnv hook zsh)"
 if [[ -f ~/.api_keys ]]; then
   source ~/.api_keys
 fi
+
+source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
