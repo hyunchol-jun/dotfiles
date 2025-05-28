@@ -5,20 +5,19 @@ return {
   opts = {
     -- add any opts here
     -- for example
-    provider = "claude",
-    claude = {
-      endpoint    = "https://api.anthropic.com",   -- leave as-is for official API
-      model       = "claude-sonnet-4-20250514",    -- *exact* model id (see docs)
-      temperature = 0,                             -- deterministic output
-      timeout     = 30000,                         -- ms; bump if you use 200 k ctx
-      -- disable_tools = true,                    -- uncomment if Avante’s tool calls blow past your quota
-    },
+    provider = "openai",
+    -- claude = {
+    --   endpoint    = "https://api.anthropic.com",   -- leave as-is for official API
+    --   model       = "claude-sonnet-4-20250514",    -- *exact* model id (see docs)
+    --   temperature = 0,                             -- deterministic output
+    --   timeout     = 30000,                         -- ms; bump if you use 200 k ctx
+    --   -- disable_tools = true,                    -- uncomment if Avante’s tool calls blow past your quota
+    -- },
     openai = {
       endpoint = "https://api.openai.com/v1",
-      model = "gpt-4o", -- your desired model (or use gpt-4o, etc.)
+      model = "gpt-4.1-mini-2025-04-14", -- your desired model (or use gpt-4o, etc.)
       timeout = 30000, -- Timeout in milliseconds, increase this for reasoning models
       temperature = 0,
-      max_completion_tokens = 8192, -- Increase this to include reasoning tokens (for reasoning models)
       --reasoning_effort = "medium", -- low|medium|high, only used for reasoning models
     },
     windows = {
