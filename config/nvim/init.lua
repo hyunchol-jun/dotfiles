@@ -623,7 +623,8 @@ require('lazy').setup({
         -- kotlin_language_server = {}, commenting out as it takes up too much memory
         -- ktlint = {},
 
-        -- ts_ls = {},
+        ts_ls = {},
+        jsonls = {},
         tailwindcss = {},
         prismals = {},
 
@@ -910,6 +911,10 @@ require('lazy').setup({
       -- - sr)'  - [S]urround [R]eplace [)] [']
       require('mini.surround').setup()
       require('mini.pairs').setup()
+      require('mini.files').setup()
+
+      local minifile = require 'mini.files'
+      vim.keymap.set('n', '<leader>e', minifile.open, { desc = 'Open file [e]xplorer'})
 
       -- Simple and easy statusline.
       --  You could remove this setup call if you don't like it,
