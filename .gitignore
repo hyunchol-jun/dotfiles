@@ -10,3 +10,5 @@ config/poplar-cli/
 config/stripe/
 config/gatsby
 config/grammarly-languageserver
+
+github-copilot/
