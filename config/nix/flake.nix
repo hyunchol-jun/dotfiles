@@ -35,7 +35,6 @@
 	  pkgs.typescript
 	  pkgs.ripgrep
 	  pkgs.direnv
-	  pkgs.zoxide
 	  pkgs.fzf
         ];
       
@@ -45,8 +44,9 @@
 	  "mas"
 	  "pnpm"
 	  "docker-compose"
-	  "jandedobbeleer/oh-my-posh/oh-my-posh"
+	  "oh-my-posh"
 	  "zsh-autosuggestions"
+	  "zoxide"
 	];
 	casks = [
 	  "karabiner-elements"
