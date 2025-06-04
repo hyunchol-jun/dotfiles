@@ -36,6 +36,7 @@
 	  pkgs.ripgrep
 	  pkgs.direnv
 	  pkgs.fzf
+	  pkgs.claude-code
         ];
       
       homebrew = {
