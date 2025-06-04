@@ -13,6 +13,10 @@ return {
           show_hidden = true,
           natural_order = true,
         },
+        keymaps = {
+          ['<C-l>'] = false,
+          ['<C-h>'] = false,
+        },
       }
 
       vim.keymap.set('n', '-', '<cmd>Oil<CR>')
