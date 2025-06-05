@@ -30,13 +30,11 @@
 	  pkgs.stow
 	  pkgs.tldr
 	  pkgs.lazygit
-	  pkgs.nodejs_22
 	  pkgs.postgresql_14
 	  pkgs.typescript
 	  pkgs.ripgrep
 	  pkgs.direnv
 	  pkgs.fzf
-	  pkgs.claude-code
 	  pkgs.gh
         ];
       
