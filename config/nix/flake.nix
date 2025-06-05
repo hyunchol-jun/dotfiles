@@ -9,6 +9,7 @@
 
   outputs = inputs@{ self, nix-darwin, nixpkgs, nix-homebrew, ... }:
   let
+    username = "hyuncholjun";
     configuration = { pkgs, config, ... }: {
       nixpkgs.config.allowUnfree = true;
 
@@ -71,10 +72,10 @@
       # Install nvm using the official script
       system.activationScripts.postUserActivation.text = ''
         echo "Checking nvm installation..." >&2
-        USER_HOME="/Users/hyuncholjun"
+        USER_HOME="/Users/${username}"
         if [ ! -d "$USER_HOME/.nvm" ]; then
-          echo "Installing nvm for user hyuncholjun..." >&2
-          sudo -u hyuncholjun bash -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash'
+          echo "Installing nvm for user ${username}..." >&2
+          sudo -u "${username}" bash -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash'
         else
           echo "nvm already installed at $USER_HOME/.nvm" >&2
         fi
@@ -147,7 +148,7 @@
 	  nix-homebrew = {
 	    enable = true;
 	    enableRosetta = true;
-	    user = "hyuncholjun";
+	    user = username;
           };
 	}
       ];
