@@ -28,7 +28,6 @@
 	  pkgs.dbeaver-bin
 	  pkgs.stow
 	  pkgs.tldr
-	  pkgs.oh-my-zsh
 	  pkgs.lazygit
 	  pkgs.nodejs_22
 	  pkgs.postgresql_14
@@ -37,6 +36,7 @@
 	  pkgs.direnv
 	  pkgs.fzf
 	  pkgs.claude-code
+	  pkgs.gh
         ];
       
       homebrew = {
