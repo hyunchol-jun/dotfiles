@@ -68,6 +68,18 @@
         pkgs.nerd-fonts.jetbrains-mono
       ];
 
+      # Install nvm using the official script
+      system.activationScripts.postUserActivation.text = ''
+        echo "Checking nvm installation..." >&2
+        USER_HOME="/Users/hyuncholjun"
+        if [ ! -d "$USER_HOME/.nvm" ]; then
+          echo "Installing nvm for user hyuncholjun..." >&2
+          sudo -u hyuncholjun bash -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash'
+        else
+          echo "nvm already installed at $USER_HOME/.nvm" >&2
+        fi
+      '';
+
       # For applications to appear in spotlight search
       system.activationScripts.applications.text = let
         env = pkgs.buildEnv {
