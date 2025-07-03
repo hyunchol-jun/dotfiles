@@ -18,7 +18,7 @@ export PATH=~/bin:~/Library/Python/3.8/bin:~/Library/Python/3.9/bin:/usr/local/m
 
 eval "$(oh-my-posh init zsh --config $HOME/.config/ohmyposh/main.toml)"
 
-eval "$(zoxide init --cmd cd zsh)"
+eval "$(zoxide init zsh)"
 
 # Vim functionality enabled
 bindkey -v
