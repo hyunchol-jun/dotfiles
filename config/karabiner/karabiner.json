@@ -352,13 +352,13 @@
                                     }
                                 ],
                                 "from": {
-                                    "key_code": "v",
+                                    "key_code": "k",
                                     "modifiers": {
                                         "mandatory": [],
                                         "optional": ["any"]
                                     }
                                 },
-                                "to": [{ "shell_command": "open -a 'visual studio code.app'" }],
+                                "to": [{ "shell_command": "open -a 'Kumospace.app'" }],
                                 "type": "basic"
                             },
                             {
@@ -369,7 +369,7 @@
                                     },
                                     "simultaneous": [
                                         { "key_code": "o" },
-                                        { "key_code": "v" }
+                                        { "key_code": "k" }
                                     ],
                                     "simultaneous_options": {
                                         "key_down_order": "strict",
@@ -392,7 +392,60 @@
                                             "value": 1
                                         }
                                     },
-                                    { "shell_command": "open -a 'visual studio code.app'" }
+                                    { "shell_command": "open -a 'Kumospace.app'" }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "launcher_mode",
+                                        "type": "variable_if",
+                                        "value": 1
+                                    }
+                                ],
+                                "from": {
+                                    "key_code": "s",
+                                    "modifiers": {
+                                        "mandatory": [],
+                                        "optional": ["any"]
+                                    }
+                                },
+                                "to": [{ "shell_command": "open -a 'Slack.app'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "modifiers": {
+                                        "mandatory": [],
+                                        "optional": ["any"]
+                                    },
+                                    "simultaneous": [
+                                        { "key_code": "o" },
+                                        { "key_code": "s" }
+                                    ],
+                                    "simultaneous_options": {
+                                        "key_down_order": "strict",
+                                        "key_up_order": "strict_inverse",
+                                        "to_after_key_up": [
+                                            {
+                                                "set_variable": {
+                                                    "name": "launcher_mode",
+                                                    "value": 0
+                                                }
+                                            }
+                                        ]
+                                    }
+                                },
+                                "parameters": { "basic.simultaneous_threshold_milliseconds": 500 },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "launcher_mode",
+                                            "value": 1
+                                        }
+                                    },
+                                    { "shell_command": "open -a 'Slack.app'" }
                                 ],
                                 "type": "basic"
                             }
