@@ -74,12 +74,12 @@ local function get_project_config(path, base_config)
   return config
 end
 
-local function get_session_name(metadata, config)
+local function get_session_name(branch, path, config)
   local name
-  if config.use_branch_name and metadata.branch then
-    name = metadata.branch
+  if config.use_branch_name and branch then
+    name = branch
   else
-    name = metadata.path:match '([^/]+)$'
+    name = path:match '([^/]+)$'
   end
   -- Clean up the name for tmux
   name = name:gsub('[%.%:%/]', '_')
@@ -225,49 +225,218 @@ local function handle_tmux_session(session_name, path, config)
   end
 end
 
--- Setup function
-M.setup = function(user_config)
-  -- Merge user config with defaults
-  M.config = vim.tbl_extend('force', M.config, user_config or {})
+-- Git worktree functions
+local function get_git_root()
+  local success, output = tmux_command('git rev-parse --show-toplevel 2>/dev/null')
+  return success and output or nil
+end
 
-  -- Require git-worktree here, after the plugin is loaded
-  local Worktree = require 'git-worktree'
+local function get_current_branch()
+  local success, output = tmux_command('git branch --show-current 2>/dev/null')
+  return success and output or nil
+end
 
-  -- Register the hook
-  Worktree.on_tree_change(function(op, metadata)
-    if op == Worktree.Operations.Create or op == Worktree.Operations.Switch then
-      -- Get project-specific configuration
-      local project_config = get_project_config(metadata.path, M.config)
-      local session_name = get_session_name(metadata, project_config)
-      vim.notify('Git Worktree: ' .. op .. ' -> tmux session: ' .. session_name)
-      handle_tmux_session(session_name, metadata.path, project_config)
-    elseif op == Worktree.Operations.Delete then
-      local project_config = get_project_config(metadata.path, M.config)
-      if project_config.auto_kill_session then
-        local session_name = get_session_name(metadata, project_config)
-        if tmux_session_exists(session_name) then
-          vim.notify('Killing tmux session: ' .. session_name)
-          local success, result = tmux_command(string.format('tmux kill-session -t %s', session_name))
-          if not success then
-            vim.notify('Failed to kill session: ' .. result, vim.log.levels.ERROR)
-          end
-        end
+local function list_worktrees()
+  local success, output = tmux_command('git worktree list --porcelain')
+  if not success then
+    return {}
+  end
+  
+  local worktrees = {}
+  local current_worktree = {}
+  
+  for line in output:gmatch('[^\n]+') do
+    if line:match('^worktree ') then
+      if current_worktree.path then
+        table.insert(worktrees, current_worktree)
       end
+      current_worktree = { path = line:match('^worktree (.+)') }
+    elseif line:match('^branch ') then
+      current_worktree.branch = line:match('^branch refs/heads/(.+)')
+    elseif line:match('^detached') then
+      current_worktree.branch = 'detached'
     end
+  end
+  
+  if current_worktree.path then
+    table.insert(worktrees, current_worktree)
+  end
+  
+  return worktrees
+end
+
+-- Public functions
+function M.create_worktree()
+  vim.ui.input({ prompt = 'Branch name: ' }, function(branch_name)
+    if not branch_name or branch_name == '' then
+      return
+    end
+    
+    local git_root = get_git_root()
+    if not git_root then
+      vim.notify('Not in a git repository', vim.log.levels.ERROR)
+      return
+    end
+    
+    -- Default path is ../branch_name relative to main worktree
+    local parent_dir = vim.fn.fnamemodify(git_root, ':h')
+    local worktree_path = parent_dir .. '/' .. branch_name
+    
+    vim.ui.input({ 
+      prompt = 'Worktree path: ', 
+      default = worktree_path 
+    }, function(path)
+      if not path or path == '' then
+        return
+      end
+      
+      -- Check if branch exists
+      local branch_exists_cmd = string.format('git show-ref --verify --quiet refs/heads/%s', branch_name)
+      local branch_exists = tmux_command(branch_exists_cmd)
+      
+      local create_cmd
+      if branch_exists then
+        -- Branch exists, just create worktree
+        create_cmd = string.format('git worktree add %s %s', 
+          vim.fn.shellescape(path), 
+          vim.fn.shellescape(branch_name))
+      else
+        -- Branch doesn't exist, create new branch with worktree
+        create_cmd = string.format('git worktree add -b %s %s', 
+          vim.fn.shellescape(branch_name),
+          vim.fn.shellescape(path))
+      end
+      
+      local success, result = tmux_command(create_cmd)
+      if not success then
+        vim.notify('Failed to create worktree: ' .. result, vim.log.levels.ERROR)
+        return
+      end
+      
+      vim.notify('Created worktree: ' .. branch_name .. ' at ' .. path)
+      
+      -- Handle tmux session
+      local config = get_project_config(path, M.config)
+      local session_name = get_session_name(branch_name, path, config)
+      handle_tmux_session(session_name, path, config)
+    end)
   end)
 end
 
-return {
-  'ThePrimeagen/git-worktree.nvim',
-  dependencies = { 'nvim-telescope/telescope.nvim' },
-  config = function()
-    require('git-worktree').setup()
-    require('telescope').load_extension 'git_worktree'
-    -- Setup tmux integration
-    M.setup()
-  end,
-  keys = {
-    { '<leader>gws', "<CMD>lua require('telescope').extensions.git_worktree.git_worktrees()<CR>", desc = '[G]it [W]orktree [S]witch' },
-    { '<leader>gwc', "<CMD>lua require('telescope').extensions.git_worktree.create_git_worktree()<CR>", desc = '[G]it [W]orktree [C]reate' },
-  },
-}
+function M.switch_worktree()
+  local worktrees = list_worktrees()
+  if #worktrees == 0 then
+    vim.notify('No worktrees found', vim.log.levels.WARN)
+    return
+  end
+  
+  local items = {}
+  for _, wt in ipairs(worktrees) do
+    table.insert(items, {
+      text = string.format('%s (%s)', wt.branch or 'detached', wt.path),
+      branch = wt.branch,
+      path = wt.path
+    })
+  end
+  
+  vim.ui.select(items, {
+    prompt = 'Select worktree:',
+    format_item = function(item)
+      return item.text
+    end
+  }, function(choice)
+    if not choice then
+      return
+    end
+    
+    -- Handle tmux session
+    local config = get_project_config(choice.path, M.config)
+    local session_name = get_session_name(choice.branch, choice.path, config)
+    handle_tmux_session(session_name, choice.path, config)
+  end)
+end
+
+function M.delete_worktree()
+  local worktrees = list_worktrees()
+  if #worktrees == 0 then
+    vim.notify('No worktrees found', vim.log.levels.WARN)
+    return
+  end
+  
+  -- Filter out main worktree
+  local deletable_worktrees = {}
+  for _, wt in ipairs(worktrees) do
+    if wt.branch then  -- Main worktree has no branch in porcelain output
+      table.insert(deletable_worktrees, wt)
+    end
+  end
+  
+  if #deletable_worktrees == 0 then
+    vim.notify('No deletable worktrees found', vim.log.levels.WARN)
+    return
+  end
+  
+  local items = {}
+  for _, wt in ipairs(deletable_worktrees) do
+    table.insert(items, {
+      text = string.format('%s (%s)', wt.branch, wt.path),
+      branch = wt.branch,
+      path = wt.path
+    })
+  end
+  
+  vim.ui.select(items, {
+    prompt = 'Select worktree to delete:',
+    format_item = function(item)
+      return item.text
+    end
+  }, function(choice)
+    if not choice then
+      return
+    end
+    
+    vim.ui.select({ 'Yes', 'No' }, {
+      prompt = string.format('Delete worktree %s?', choice.branch)
+    }, function(confirm)
+      if confirm ~= 'Yes' then
+        return
+      end
+      
+      -- Delete the worktree
+      local delete_cmd = string.format('git worktree remove %s', vim.fn.shellescape(choice.path))
+      local success, result = tmux_command(delete_cmd)
+      if not success then
+        vim.notify('Failed to delete worktree: ' .. result, vim.log.levels.ERROR)
+        return
+      end
+      
+      vim.notify('Deleted worktree: ' .. choice.branch)
+      
+      -- Kill tmux session if configured
+      local config = get_project_config(choice.path, M.config)
+      if config.auto_kill_session then
+        local session_name = get_session_name(choice.branch, choice.path, config)
+        if tmux_session_exists(session_name) then
+          vim.notify('Killing tmux session: ' .. session_name)
+          local kill_success, kill_result = tmux_command(string.format('tmux kill-session -t %s', session_name))
+          if not kill_success then
+            vim.notify('Failed to kill session: ' .. kill_result, vim.log.levels.ERROR)
+          end
+        end
+      end
+    end)
+  end)
+end
+
+-- Setup function
+function M.setup(user_config)
+  -- Merge user config with defaults
+  M.config = vim.tbl_extend('force', M.config, user_config or {})
+  
+  -- Create user commands
+  vim.api.nvim_create_user_command('WorktreeCreate', M.create_worktree, {})
+  vim.api.nvim_create_user_command('WorktreeSwitch', M.switch_worktree, {})
+  vim.api.nvim_create_user_command('WorktreeDelete', M.delete_worktree, {})
+end
+
+return M

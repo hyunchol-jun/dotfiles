@@ -1,5 +1,13 @@
 return {
   {
+    'ThePrimeagen/git-worktree.nvim',
+    keys = {
+      { '<leader>gws', "<CMD>lua require('telescope').extensions.git_worktree.git_worktrees()<CR>", desc = '[G]it [W]orktree [S]witch' },
+      { '<leader>gwc', "<CMD>lua require('telescope').extensions.git_worktree.create_git_worktree()<CR>", desc = '[G]it [W]orktree [C]reate' },
+      -- Ctrl-D deletes a worktree
+    },
+  },
+  {
     'tpope/vim-fugitive',
   },
   {
