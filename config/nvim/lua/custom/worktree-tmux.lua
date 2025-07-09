@@ -16,6 +16,8 @@ M.config = {
   auto_open_nvim = true,
   -- Custom command to run instead of nvim
   nvim_command = 'nvim',
+  -- Vim command to run after nvim starts (e.g., ':!pnpm i')
+  nvim_startup_command = nil,
   -- Create a split pane when creating new session
   create_split_pane = false,
   -- Split direction: 'h' for horizontal (right), 'v' for vertical (below)
@@ -27,6 +29,7 @@ M.config = {
     ['implentio-app'] = {
       auto_open_nvim = true,
       nvim_command = 'nvim',
+      nvim_startup_command = ':!pnpm i',
       -- Custom layout: multiple panes with specific commands
       custom_layout = {
         -- First split: vertical 50/50 (nvim left, terminal area right)
@@ -46,6 +49,30 @@ M.config = {
         [3] = {  -- bottom-right pane (ui)
           'cd packages/ui',
           'cp ~/Implentio/implentio-app.git/main/packages/ui/.env .',
+        },
+      },
+    },
+    ['readbetter-app'] = {
+      auto_open_nvim = true,
+      nvim_command = 'nvim',
+      nvim_startup_command = ':!pnpm i',
+      -- Custom layout: multiple panes with specific commands
+      custom_layout = {
+        -- First split: vertical 50/50 (nvim left, terminal area right)
+        { direction = 'h', size = 50 },
+        -- Second split: in right pane, horizontal split (top/bottom)
+        { target_pane = 1, direction = 'v', size = 50 },
+        -- Third split: in bottom-right pane, vertical split (left/right)
+        { target_pane = 2, direction = 'h', size = 50 },
+      },
+      -- Commands to run in each pane after layout is created
+      pane_commands = {
+        [1] = 'claude',  -- top-right pane
+        [2] = {  -- bottom-left pane (api-v2)
+          'cd packages/backend',
+        },
+        [3] = {  -- bottom-right pane (ui)
+          'cd packages/frontend',
         },
       },
     },
@@ -217,6 +244,17 @@ local function handle_tmux_session(session_name, path, config)
       tmux_command(string.format('tmux send-keys -t %s:0.0 "%s" C-m',
         session_name,
         config.nvim_command))
+      
+      -- Send vim startup command if configured
+      if config.nvim_startup_command then
+        -- Wait for nvim to start
+        vim.cmd('sleep 1000m')
+        
+        -- Send the configured vim command
+        tmux_command(string.format('tmux send-keys -t %s:0.0 "%s" C-m',
+          session_name,
+          config.nvim_startup_command))
+      end
     end
     
     -- Switch to new session
