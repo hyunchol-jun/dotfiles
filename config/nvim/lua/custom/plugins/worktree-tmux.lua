@@ -1,7 +1,8 @@
 -- This is a simple plugin spec that just loads our custom module
 return {
-  'nvim-lua/plenary.nvim', -- dummy dependency to make lazy.nvim happy
   name = 'worktree-tmux',
+  dir = vim.fn.stdpath('config') .. '/lua/custom',
+  dependencies = { 'nvim-lua/plenary.nvim' },
   config = function()
     require('custom.worktree-tmux').setup()
   end,

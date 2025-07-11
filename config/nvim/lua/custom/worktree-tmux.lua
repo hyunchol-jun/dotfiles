@@ -52,7 +52,7 @@ M.config = {
         },
       },
     },
-    ['readbetter-app'] = {
+    ['read-better-app'] = {
       auto_open_nvim = true,
       nvim_command = 'nvim',
       nvim_startup_command = ':!pnpm i',
@@ -70,6 +70,7 @@ M.config = {
         [1] = 'claude',  -- top-right pane
         [2] = {  -- bottom-left pane (api-v2)
           'cd packages/backend',
+          'cp ~/LuxNova/read-better-app.git/main/apps/backend/.env .',
         },
         [3] = {  -- bottom-right pane (ui)
           'cd packages/frontend',
