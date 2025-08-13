@@ -1,0 +1,81 @@
+# Example commands for copying data from production
+
+# 1. First, list all schemas in your production database:
+PGPASSWORD='your_password' psql -h prod.example.com -U your_user -d your_db -c "\dn"
+
+# 2. Copy specific schemas (this is READ-ONLY, won't modify production):
+PGPASSWORD='your_password' pg_dump \
+  -h prod.example.com \
+  -U your_user \
+  -d your_db \
+  -n schema1 \
+  -n schema2 \
+  -n schema3 \
+  --no-owner \
+  --no-acl \
+  --verbose \
+  | psql -d local_database_name
+
+# 3. Copy with compression (for large databases):
+PGPASSWORD='your_password' pg_dump \
+  -h prod.example.com \
+  -U your_user \
+  -d your_db \
+  -n schema1 \
+  -n schema2 \
+  -Fc \
+  --no-owner \
+  --no-acl \
+  > prod_backup.dump
+
+# Then restore:
+pg_restore -d local_database_name prod_backup.dump
+
+# Safety features explained:
+# - pg_dump is READ-ONLY - it cannot modify production data
+# - --no-owner: Don't try to set ownership (avoids permission issues)
+# - --no-acl: Don't copy access privileges
+# - -n: Only copy specific schemas
+# - -Fc: Custom format with compression
+
+# To exclude specific tables from a schema:
+PGPASSWORD='your_password' pg_dump \
+  -h prod.example.com \
+  -U your_user \
+  -d your_db \
+  -n schema1 \
+  --exclude-table=schema1.large_logs_table \
+  --exclude-table=schema1.temporary_data \
+  --no-owner \
+  --no-acl \
+  | psql -d local_database_name
+
+
+# Steps to run copy command again
+Step 1: Edit the script with your connection details
+  nano ~/postgres-external-scripts/copy-from-prod.sh
+
+  Update these values:
+  - REMOTE_HOST - your production server
+  - REMOTE_DB - production database name
+  - REMOTE_USER - your username
+  - SCHEMAS_TO_COPY - the schemas you want (space-separated)
+
+  Step 2: List available schemas (optional)
+  ~/postgres-external-scripts/copy-from-prod.sh list
+  It will ask for your password, then show all schemas.
+
+  Step 3: Copy the data
+  ~/postgres-external-scripts/copy-from-prod.sh copy
+  It will:
+  - Ask for your password
+  - Create the local database (implentio_local)
+  - Copy only the schemas you specified
+  - Show progress
+  - Verify the copy
+
+  Step 4: Verify later (optional)
+  ~/postgres-external-scripts/copy-from-prod.sh verify
+
+  The script is read-only and won't modify your production database!:w
+

@@ -11,7 +11,9 @@
       "Bash(env)",
       "Bash(sed:*)",
       "Bash(claude:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }

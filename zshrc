@@ -33,6 +33,10 @@ alias python=python3
 alias pip=pip3
 alias v="nvim"
 
+alias pgstart='~/dotfiles/postgres-external-scripts/pg-toggle.sh start'
+alias pgstop='~/dotfiles/postgres-external-scripts/pg-toggle.sh stop'
+alias pgstatus='~/dotfiles/postgres-external-scripts/pg-toggle.sh status'
+
 export EDITOR='vim'
 
 # Added for Android development

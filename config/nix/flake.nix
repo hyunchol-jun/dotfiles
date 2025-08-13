@@ -31,6 +31,7 @@
 	  pkgs.tldr
 	  pkgs.lazygit
 	  pkgs.postgresql_14
+	  pkgs.postgresql_16
 	  pkgs.typescript
 	  pkgs.ripgrep
 	  pkgs.direnv

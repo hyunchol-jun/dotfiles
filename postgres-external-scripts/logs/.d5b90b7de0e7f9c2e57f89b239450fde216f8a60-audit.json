@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/Users/hyuncholjun/postgres-external-scripts/logs/.d5b90b7de0e7f9c2e57f89b239450fde216f8a60-audit.json",
+    "files": [
+        {
+            "date": 1750230533235,
+            "name": "/Users/hyuncholjun/postgres-external-scripts/logs/mcp-puppeteer-2025-06-18.log",
+            "hash": "f0e438794f3a1b972e9e9a59f55cb192a752de68b333e15936344716bd2c9976"
+        },
+        {
+            "date": 1750876627778,
+            "name": "/Users/hyuncholjun/postgres-external-scripts/logs/mcp-puppeteer-2025-06-26.log",
+            "hash": "e795aa0990c720d18ee6de836cab844050f45c0bc84063f5728963ad34255ab4"
+        }
+    ],
+    "hashType": "sha256"
+}
