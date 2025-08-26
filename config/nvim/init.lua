@@ -203,6 +203,9 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right win
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
+-- Normal mode: console.log word under cursor
+  vim.keymap.set('n', '<leader>cl', 'yiwoconsole.log("<C-r>": ", <C-r>");<Esc>', { desc = "Console.log word under cursor" })
+
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
