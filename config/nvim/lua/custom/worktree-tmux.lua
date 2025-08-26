@@ -41,7 +41,7 @@ M.config = {
       },
       -- Commands to run in each pane after layout is created
       pane_commands = {
-        [1] = 'claude',  -- top-right pane
+        [1] = 'claude --model claude-opus-4-1-20250805 --dangerously-skip-permissions',  -- top-right pane
         [2] = {  -- bottom-left pane (api-v2)
           'cd packages/api-v2',
           'cp ~/Implentio/implentio-app.git/main/packages/api-v2/.env .',
