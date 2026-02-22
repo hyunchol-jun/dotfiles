@@ -117,6 +117,10 @@ vim.keymap.set('n', '<leader>tla', function()
   vim.opt.relativenumber = false
 end, { desc = '[T]oggle [L]elative number [A]bsolute' })
 
+vim.keymap.set('n', '<leader>tw', function()
+  vim.opt.wrap = not vim.opt.wrap:get()
+end, { desc = '[T]oggle [W]rap' })
+
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
 
@@ -624,7 +628,7 @@ require('lazy').setup({
         terraformls = {},
 
         -- kotlin_language_server = {}, commenting out as it takes up too much memory
-        -- ktlint = {},
+        kotlin_lsp = {}, -- Official JetBrains Kotlin LSP
 
         ts_ls = {},
         jsonls = {},
