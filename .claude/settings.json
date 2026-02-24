@@ -1,8 +1,9 @@
 {
+  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
       "Read(*)",
-      "WebFetch(*)",
+      "WebFetch(domain:*.google.com)",
       "Bash(grep:*)",
       "Bash(ls:*)",
       "Bash(cat:*)",
@@ -14,5 +15,11 @@
       "Bash(mkdir:*)"
     ],
     "deny": []
-  }
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh"
+  },
+  "alwaysThinkingEnabled": true,
+  "skipDangerousModePermissionPrompt": true
 }

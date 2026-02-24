@@ -12,6 +12,7 @@
     ~/.claude/commands: .claude/commands
     ~/.claude/settings.local.json: .claude/settings.local.json
     ~/.claude/settings.json: .claude/settings.json
+    ~/.claude/statusline-command.sh: .claude/statusline-command.sh
 
 - shell:
     - [git submodule update --init --recursive, Installing submodules]
