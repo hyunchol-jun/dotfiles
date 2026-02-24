@@ -66,3 +66,6 @@ elif [[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]
   source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 fi
 bindkey '^y' autosuggest-accept
+
+# opencode
+export PATH=/Users/hyuncholjun/.opencode/bin:$PATH

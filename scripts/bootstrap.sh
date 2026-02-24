@@ -61,6 +61,14 @@ else
   echo "==> Claude Code already installed"
 fi
 
+# OpenCode
+if ! command -v opencode &>/dev/null; then
+  echo "==> Installing OpenCode..."
+  curl -fsSL https://opencode.ai/install | bash
+else
+  echo "==> OpenCode already installed"
+fi
+
 # TPM (Tmux Plugin Manager)
 TPM_DIR="$HOME/.tmux/plugins/tpm"
 if [ ! -d "$TPM_DIR" ]; then

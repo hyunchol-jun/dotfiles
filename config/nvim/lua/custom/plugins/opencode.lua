@@ -34,10 +34,11 @@ return {
         function()
           require('opencode').toggle()
         end,
+        mode = { 'n', 't' },
         desc = '[O]penCode [T]oggle',
       },
     },
-    config = function()
+    init = function()
       vim.g.opencode_opts = {}
       vim.o.autoread = true
     end,
