@@ -38,6 +38,21 @@ else
   echo "==> mise runtimes already installed"
 fi
 
+# npm global packages
+NPM_GLOBALS=(typescript prettier pnpm tsx)
+missing=()
+for pkg in "${NPM_GLOBALS[@]}"; do
+  if ! npm ls -g "$pkg" &>/dev/null; then
+    missing+=("$pkg")
+  fi
+done
+if [[ ${#missing[@]} -gt 0 ]]; then
+  echo "==> Installing npm global packages: ${missing[*]}"
+  npm install -g "${missing[@]}"
+else
+  echo "==> npm global packages already installed"
+fi
+
 # Claude Code
 if ! command -v claude &>/dev/null; then
   echo "==> Installing Claude Code..."
