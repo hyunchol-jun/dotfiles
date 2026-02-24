@@ -20,42 +20,81 @@ fi
 
 # Install packages from Brewfile
 echo "==> Running brew bundle..."
-brew bundle --file="$DOTFILES_DIR/Brewfile"
+if ! brew bundle --file="$DOTFILES_DIR/Brewfile" --no-upgrade; then
+  echo "==> Some Brewfile entries failed (may need sudo or MAS login). Continuing..."
+fi
 
 # macOS defaults
 echo "==> Applying macOS defaults..."
 
+changed=0
+
+apply_default() {
+  local current
+  current=$(defaults read "$1" "$2" 2>/dev/null) || current=""
+  if [[ "$current" != "$3" ]]; then
+    shift 3
+    defaults write "$@"
+    changed=1
+  fi
+}
+
+apply_default_currentHost() {
+  local current
+  current=$(defaults -currentHost read "$1" "$2" 2>/dev/null) || current=""
+  if [[ "$current" != "$3" ]]; then
+    shift 3
+    defaults -currentHost write "$@"
+    changed=1
+  fi
+}
+
 # Dock: autohide
-defaults write com.apple.dock autohide -bool true
+apply_default com.apple.dock autohide 1 \
+  com.apple.dock autohide -bool true
 
 # Dock: minimize effect
-defaults write com.apple.dock mineffect -string "scale"
+apply_default com.apple.dock mineffect scale \
+  com.apple.dock mineffect -string "scale"
 
 # Dark mode
-defaults write NSGlobalDomain AppleInterfaceStyle -string "Dark"
+apply_default NSGlobalDomain AppleInterfaceStyle Dark \
+  NSGlobalDomain AppleInterfaceStyle -string "Dark"
 
 # Fast key repeat
-defaults write NSGlobalDomain KeyRepeat -int 2
-defaults write NSGlobalDomain InitialKeyRepeat -int 15
+apply_default NSGlobalDomain KeyRepeat 2 \
+  NSGlobalDomain KeyRepeat -int 2
+apply_default NSGlobalDomain InitialKeyRepeat 15 \
+  NSGlobalDomain InitialKeyRepeat -int 15
 
 # Hide menu bar
-defaults write NSGlobalDomain _HIHideMenuBar -bool true
+apply_default NSGlobalDomain _HIHideMenuBar 1 \
+  NSGlobalDomain _HIHideMenuBar -bool true
 
 # Trackpad: tap to click
-defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true
-defaults -currentHost write NSGlobalDomain com.apple.mouse.tapBehavior -int 1
+apply_default com.apple.AppleMultitouchTrackpad Clicking 1 \
+  com.apple.AppleMultitouchTrackpad Clicking -bool true
+apply_default_currentHost NSGlobalDomain com.apple.mouse.tapBehavior 1 \
+  NSGlobalDomain com.apple.mouse.tapBehavior -int 1
 
 # Disable natural scrolling
-defaults write NSGlobalDomain com.apple.swipescrolldirection -bool false
+apply_default NSGlobalDomain com.apple.swipescrolldirection 0 \
+  NSGlobalDomain com.apple.swipescrolldirection -bool false
 
 # Finder: show all filename extensions
-defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+apply_default NSGlobalDomain AppleShowAllExtensions 1 \
+  NSGlobalDomain AppleShowAllExtensions -bool true
 
 # Finder: show path bar
-defaults write com.apple.finder ShowPathbar -bool true
+apply_default com.apple.finder ShowPathbar 1 \
+  com.apple.finder ShowPathbar -bool true
 
-# Restart affected applications
-echo "==> Restarting Dock, Finder, and SystemUIServer..."
-killall Dock Finder SystemUIServer 2>/dev/null || true
+# Restart affected applications only if something changed
+if [[ "$changed" -eq 1 ]]; then
+  echo "==> Restarting Dock, Finder, and SystemUIServer..."
+  killall Dock Finder SystemUIServer 2>/dev/null || true
+else
+  echo "==> Defaults already up to date, skipping restart."
+fi
 
 echo "==> macOS setup complete!"
