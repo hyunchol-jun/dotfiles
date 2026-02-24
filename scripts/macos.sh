@@ -19,9 +19,15 @@ if ! command -v brew &>/dev/null; then
 fi
 
 # Install packages from Brewfile
-echo "==> Running brew bundle..."
-if ! brew bundle --file="$DOTFILES_DIR/Brewfile" --no-upgrade; then
-  echo "==> Some Brewfile entries failed (may need sudo or MAS login). Continuing..."
+echo "==> Checking Brewfile dependencies..."
+export HOMEBREW_NO_AUTO_UPDATE=1
+if brew bundle check --file="$DOTFILES_DIR/Brewfile" &>/dev/null; then
+  echo "==> All Brewfile dependencies satisfied, skipping install."
+else
+  echo "==> Running brew bundle..."
+  if ! brew bundle --file="$DOTFILES_DIR/Brewfile" --no-upgrade --no-lock; then
+    echo "==> Some Brewfile entries failed (may need sudo or MAS login). Continuing..."
+  fi
 fi
 
 # macOS defaults

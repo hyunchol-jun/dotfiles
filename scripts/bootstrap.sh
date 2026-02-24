@@ -31,8 +31,12 @@ echo "==> Running Dotbot..."
 "$DOTFILES_DIR/install"
 
 # mise runtimes
-echo "==> Installing mise runtimes..."
-mise install
+if mise ls --missing | grep -q .; then
+  echo "==> Installing mise runtimes..."
+  mise install
+else
+  echo "==> mise runtimes already installed"
+fi
 
 # Claude Code
 if ! command -v claude &>/dev/null; then
