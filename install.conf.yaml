@@ -13,6 +13,7 @@
     ~/.claude/settings.json: .claude/settings.json
     ~/.claude/statusline-command.sh: .claude/statusline-command.sh
     ~/.claude/CLAUDE.md: .claude/CLAUDE.md
+    ~/.claude/ntfy-notify.sh: .claude/ntfy-notify.sh
 
 - shell:
     - [git submodule update --init --recursive, Installing submodules]
