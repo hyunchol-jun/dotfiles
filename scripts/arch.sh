@@ -39,8 +39,7 @@ fi
 echo "==> Installing AUR packages..."
 yay -S --needed --noconfirm \
   mise-bin \
-  oh-my-posh-bin \
-  pnpm-bin
+  oh-my-posh-bin
 
 # GUI apps (only if a desktop environment is detected)
 if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
