@@ -2,7 +2,7 @@ MACHINE_NAME=$(hostname)
 
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
-export PATH=~/bin:~/Library/Python/3.8/bin:~/Library/Python/3.9/bin:/usr/local/mysql/bin:$PATH
+export PATH=~/bin:~/.local/bin:$PATH
 
 # ZSH_THEME=""
 #
@@ -46,24 +46,10 @@ export PATH=$PATH:$ANDROID_HOME/tools
 export PATH=$PATH:$ANDROID_HOME/tools/bin
 export PATH=$PATH:$ANDROID_HOME/platform-tools
 
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home
-
 export SOPS_AGE_KEY_FILE=~/Implentio/implentio-local-dev-key.txt
 
-# Created by `pipx` on 2024-05-01 01:05:58
-export PATH="$PATH:~/.local/bin"
-
-# Nix related
-export PATH="$NIX_LINK/bin:/nix/var/nix/profiles/default/bin:$PATH"
-export PATH="$HOME/.nix-profile/bin:$PATH"
-
-#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
-export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+# mise (runtime version manager)
+eval "$(mise activate zsh)"
 
 # For direnv to work properly it needs to be hooked into the shell.
 eval "$(direnv hook zsh)"
@@ -73,5 +59,10 @@ if [[ -f ~/.api_keys ]]; then
   source ~/.api_keys
 fi
 
-source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+# zsh-autosuggestions (cross-platform)
+if [[ -f "$(brew --prefix 2>/dev/null)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
+  source "$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+elif [[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
+  source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+fi
 bindkey '^y' autosuggest-accept

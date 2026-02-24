@@ -1,0 +1,7 @@
+[tools]
+node = "lts"
+java = "zulu-21"
+python = "3"
+
+[settings]
+auto_install = true
