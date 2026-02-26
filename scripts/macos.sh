@@ -25,7 +25,7 @@ if brew bundle check --file="$DOTFILES_DIR/Brewfile" &>/dev/null; then
   echo "==> All Brewfile dependencies satisfied, skipping install."
 else
   echo "==> Running brew bundle..."
-  if ! brew bundle --file="$DOTFILES_DIR/Brewfile" --no-upgrade --no-lock; then
+  if ! brew bundle --file="$DOTFILES_DIR/Brewfile" --no-upgrade; then
     echo "==> Some Brewfile entries failed (may need sudo or MAS login). Continuing..."
   fi
 fi
