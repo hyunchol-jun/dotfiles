@@ -16,7 +16,9 @@ This will:
 1. Install platform packages (Homebrew + Brewfile on macOS, pacman + yay on Arch)
 2. Run Dotbot to symlink config files
 3. Install runtimes via mise (Node, Java, Python)
-4. Clone TPM (Tmux Plugin Manager) if missing
+4. Install npm global packages (typescript, prettier, pnpm, tsx)
+5. Install Claude Code and OpenCode if missing
+6. Clone TPM (Tmux Plugin Manager) if missing
 
 ## Runtime Management (mise)
 
@@ -55,7 +57,6 @@ scripts/
 config/
   mise/config.toml        # Runtime versions (node, java, python)
   nvim/                   # Neovim config
-  ohmyposh/               # Oh My Posh prompt theme
 install.conf.yaml         # Dotbot symlink configuration
 zshrc                     # Zsh configuration
 tmux.conf                 # Tmux configuration
