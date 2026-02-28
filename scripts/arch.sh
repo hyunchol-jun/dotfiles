@@ -46,7 +46,7 @@ yay -S --needed --noconfirm \
 # GUI apps (only if a desktop environment is detected)
 if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
   echo "==> Installing GUI applications..."
-  sudo pacman -S --needed --noconfirm alacritty ghostty
+  sudo pacman -S --needed --noconfirm ghostty
   yay -S --needed --noconfirm \
     obsidian \
     intellij-idea-community-edition \

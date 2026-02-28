@@ -21,7 +21,6 @@ brew "yazi"
 brew "poppler"
 
 # Casks
-cask "alacritty"
 cask "ghostty"
 cask "obsidian"
 cask "slack"
