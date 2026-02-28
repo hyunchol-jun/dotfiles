@@ -89,9 +89,9 @@ apply_default com.apple.AppleMultitouchTrackpad Clicking 1 \
 apply_default_currentHost NSGlobalDomain com.apple.mouse.tapBehavior 1 \
   NSGlobalDomain com.apple.mouse.tapBehavior -int 1
 
-# Disable natural scrolling
-apply_default NSGlobalDomain com.apple.swipescrolldirection 0 \
-  NSGlobalDomain com.apple.swipescrolldirection -bool false
+# Enable natural scrolling
+apply_default NSGlobalDomain com.apple.swipescrolldirection 1 \
+  NSGlobalDomain com.apple.swipescrolldirection -bool true
 
 # Finder: show all filename extensions
 apply_default NSGlobalDomain AppleShowAllExtensions 1 \
@@ -108,5 +108,13 @@ if [[ "$changed" -eq 1 ]]; then
 else
   echo "==> Defaults already up to date, skipping restart."
 fi
+
+# Apply natural scrolling immediately (CGS API required on macOS 15+)
+swift -e '
+  import CoreGraphics
+  @_silgen_name("CGSMainConnectionID") func CGSMainConnectionID() -> UInt32
+  @_silgen_name("CGSSetSwipeScrollDirection") func CGSSetSwipeScrollDirection(_ c: UInt32, _ n: Bool) -> Int32
+  _ = CGSSetSwipeScrollDirection(CGSMainConnectionID(), true)
+' 2>/dev/null || true
 
 echo "==> macOS setup complete!"
