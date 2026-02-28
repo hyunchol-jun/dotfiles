@@ -4,3 +4,7 @@ theme = Catppuccin Mocha
 macos-option-as-alt = left
 window-padding-x = 5
 window-padding-y = 5
+window-save-state = always
+copy-on-select = clipboard
+cursor-style-blink = false
+confirm-close-surface = false

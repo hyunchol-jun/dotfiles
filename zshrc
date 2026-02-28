@@ -4,18 +4,6 @@ MACHINE_NAME=$(hostname)
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 export PATH=~/bin:~/.local/bin:$PATH
 
-# ZSH_THEME=""
-#
-# if [[ "$MACHINE_NAME" == *"MacBook-Pro"* ]]; then
-#     ZSH_THEME="af-magic"
-# elif [[ "$MACHINE_NAME" == *"mini1"* ]]; then
-#     ZSH_THEME="agnoster"
-# elif [[ "$MACHINE_NAME" == *"mini2"* ]]; then
-#     ZSH_THEME="amuse"
-# else
-#     ZSH_THEME="af-magic"
-# fi
-
 eval "$(oh-my-posh init zsh --config $HOME/.config/ohmyposh/main.toml)"
 
 eval "$(zoxide init zsh)"
@@ -37,7 +25,7 @@ alias pgstart='~/dotfiles/postgres-external-scripts/pg-toggle.sh start'
 alias pgstop='~/dotfiles/postgres-external-scripts/pg-toggle.sh stop'
 alias pgstatus='~/dotfiles/postgres-external-scripts/pg-toggle.sh status'
 
-export EDITOR='vim'
+export EDITOR='nvim'
 
 # Added for Android development
 export ANDROID_HOME=$HOME/Library/Android/sdk
@@ -59,13 +47,37 @@ if [[ -f ~/.api_keys ]]; then
   source ~/.api_keys
 fi
 
+# Cache brew prefix for faster startup
+BREW_PREFIX=$(brew --prefix 2>/dev/null)
+
+# fzf shell integration (Ctrl+R, Ctrl+T, Alt+C)
+if [[ -n "$BREW_PREFIX" ]]; then
+  eval "$($BREW_PREFIX/bin/fzf --zsh 2>/dev/null)"
+fi
+
 # zsh-autosuggestions (cross-platform)
-if [[ -f "$(brew --prefix 2>/dev/null)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
-  source "$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+if [[ -f "$BREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
+  source "$BREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
 elif [[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
   source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 fi
 bindkey '^y' autosuggest-accept
+
+# zsh-history-substring-search
+if [[ -f "$BREW_PREFIX/share/zsh-history-substring-search/zsh-history-substring-search.zsh" ]]; then
+  source "$BREW_PREFIX/share/zsh-history-substring-search/zsh-history-substring-search.zsh"
+elif [[ -f /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh ]]; then
+  source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
+fi
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
+
+# zsh-syntax-highlighting (must be sourced last)
+if [[ -f "$BREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]]; then
+  source "$BREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+elif [[ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
+  source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+fi
 
 # opencode
 export PATH=/Users/hyuncholjun/.opencode/bin:$PATH
