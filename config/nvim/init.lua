@@ -210,6 +210,13 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 -- Normal mode: console.log word under cursor
   vim.keymap.set('n', '<leader>cl', 'yiwoconsole.log("<C-r>": ", <C-r>");<Esc>', { desc = "Console.log word under cursor" })
 
+-- Copy full filepath to clipboard
+  vim.keymap.set('n', '<leader>cp', function()
+    local path = vim.fn.expand('%:p')
+    vim.fn.setreg('+', path)
+    vim.notify(path, vim.log.levels.INFO, { title = 'Copied filepath' })
+  end, { desc = '[C]opy file[P]ath' })
+
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
