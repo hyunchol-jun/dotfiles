@@ -17,6 +17,7 @@ brew "zsh-autosuggestions"
 brew "zoxide"
 brew "mise"
 brew "yazi"
+brew "poppler"
 
 # Casks
 cask "alacritty"

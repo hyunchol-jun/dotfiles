@@ -30,6 +30,12 @@ else
   fi
 fi
 
+# Ghostty terminfo (needed for tmux)
+if ! infocmp xterm-ghostty &>/dev/null; then
+  echo "==> Installing Ghostty terminfo..."
+  cp -r /Applications/Ghostty.app/Contents/Resources/terminfo/* ~/.terminfo/
+fi
+
 # macOS defaults
 echo "==> Applying macOS defaults..."
 
