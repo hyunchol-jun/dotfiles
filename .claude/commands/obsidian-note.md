@@ -15,6 +15,12 @@ Follow these steps:
 
 3. **Choose a kebab-case filename** based on the topic (e.g., `docker-cheatsheet.md`, `git-rebase-guide.md`).
 
-4. **Save the file** to `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/vimwiki/<filename>.md`.
+4. **Choose the target folder** — spawn a Task subagent (haiku model, subagent_type "Explore") with a prompt like:
 
-5. **Confirm** by printing the full path of the saved file and a brief summary of what was written.
+   > List the top-level folders in `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/vimwiki/`, excluding `.obsidian`, `.git`, `daily`, and `diary`. Given the note topic "{topic}", pick the single best-fit existing folder. If no folder fits well, invent a short lowercase folder name. Return ONLY the folder name, nothing else.
+
+   Use the returned folder name as `<folder>`. If the folder doesn't exist yet, create it.
+
+5. **Save the file** to `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/vimwiki/<folder>/<filename>.md`.
+
+6. **Confirm** by printing the full path of the saved file and a brief summary of what was written.
