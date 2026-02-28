@@ -28,6 +28,8 @@ alias "gll"="git log --graph --pretty=oneline --abbrev-commit"
 alias python=python3
 alias pip=pip3
 alias v="nvim"
+alias y="yazi"
+alias cc="claude --dangerously-skip-permissions"
 
 alias pgstart='~/dotfiles/postgres-external-scripts/pg-toggle.sh start'
 alias pgstop='~/dotfiles/postgres-external-scripts/pg-toggle.sh stop'
