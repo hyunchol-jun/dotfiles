@@ -4,7 +4,15 @@ MACHINE_NAME=$(hostname)
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 export PATH=~/bin:~/.local/bin:$PATH
 
-eval "$(oh-my-posh init zsh --config $HOME/.config/ohmyposh/main.toml)"
+# Prompt
+autoload -Uz vcs_info
+precmd() { vcs_info }
+zstyle ':vcs_info:git:*' check-for-changes true
+zstyle ':vcs_info:git:*' unstagedstr '*'
+zstyle ':vcs_info:git:*' stagedstr '+'
+zstyle ':vcs_info:git:*' formats ' %F{yellow}%b%u%c%f'
+setopt PROMPT_SUBST
+PROMPT='%F{blue}%~%f${vcs_info_msg_0_} %F{magenta}❯%f '
 
 eval "$(zoxide init zsh)"
 
