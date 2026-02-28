@@ -23,6 +23,8 @@ sudo pacman -S --needed --noconfirm \
   zsh \
   zsh-autosuggestions \
   zoxide \
+  tailscale \
+  yazi \
   ttf-jetbrains-mono-nerd
 
 # Install yay (AUR helper)
@@ -44,7 +46,7 @@ yay -S --needed --noconfirm \
 # GUI apps (only if a desktop environment is detected)
 if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
   echo "==> Installing GUI applications..."
-  sudo pacman -S --needed --noconfirm alacritty
+  sudo pacman -S --needed --noconfirm alacritty ghostty
   yay -S --needed --noconfirm \
     obsidian \
     intellij-idea-community-edition \

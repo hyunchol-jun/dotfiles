@@ -16,9 +16,11 @@ brew "oh-my-posh"
 brew "zsh-autosuggestions"
 brew "zoxide"
 brew "mise"
+brew "yazi"
 
 # Casks
 cask "alacritty"
+cask "ghostty"
 cask "obsidian"
 cask "slack"
 cask "google-chrome"
@@ -26,7 +28,9 @@ cask "dbeaver-community"
 cask "karabiner-elements"
 cask "raycast"
 cask "opal-composer"
-cask "docker"
+cask "docker-desktop"
+cask "hammerspoon"
+cask "tailscale-app"
 cask "font-jetbrains-mono-nerd-font"
 
 # Mac App Store
