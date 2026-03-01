@@ -28,60 +28,15 @@ M.config = {
   default_merge_strategy = 'merge', -- 'merge', 'rebase', or 'squash'
   auto_delete_branch = true,        -- delete branch after successful merge
   merge_target_branch = nil,        -- nil = auto-detect via git symbolic-ref refs/remotes/origin/HEAD
-  -- Project-specific configurations
-  projects = {
-    ['implentio-app'] = {
-      auto_open_nvim = true,
-      nvim_command = 'nvim',
-      nvim_startup_command = ':!pnpm i',
-      -- Custom layout: multiple panes with specific commands
-      custom_layout = {
-        -- First split: vertical 50/50 (nvim left, terminal area right)
-        { direction = 'h', size = 50 },
-        -- Second split: in right pane, horizontal split (top/bottom)
-        { target_pane = 1, direction = 'v', size = 50 },
-        -- Third split: in bottom-right pane, vertical split (left/right)
-        { target_pane = 2, direction = 'h', size = 50 },
-      },
-      -- Commands to run in each pane after layout is created
-      pane_commands = {
-        [1] = 'claude --model claude-opus-4-1-20250805 --dangerously-skip-permissions',  -- top-right pane
-        [2] = {  -- bottom-left pane (api-v2)
-          'cd packages/api-v2',
-          'cp ~/Implentio/implentio-app.git/main/packages/api-v2/.env .',
-        },
-        [3] = {  -- bottom-right pane (ui)
-          'cd packages/ui',
-          'cp ~/Implentio/implentio-app.git/main/packages/ui/.env .',
-        },
-      },
-    },
-    ['read-better-app'] = {
-      auto_open_nvim = true,
-      nvim_command = 'nvim',
-      nvim_startup_command = ':!pnpm i',
-      -- Custom layout: multiple panes with specific commands
-      custom_layout = {
-        -- First split: vertical 50/50 (nvim left, terminal area right)
-        { direction = 'h', size = 50 },
-        -- Second split: in right pane, horizontal split (top/bottom)
-        { target_pane = 1, direction = 'v', size = 50 },
-        -- Third split: in bottom-right pane, vertical split (left/right)
-        { target_pane = 2, direction = 'h', size = 50 },
-      },
-      -- Commands to run in each pane after layout is created
-      pane_commands = {
-        [1] = 'claude',  -- top-right pane
-        [2] = {  -- bottom-left pane (api-v2)
-          'cd packages/backend',
-          'cp ~/LuxNova/read-better-app.git/main/apps/backend/.env .',
-        },
-        [3] = {  -- bottom-right pane (ui)
-          'cd packages/frontend',
-        },
-      },
-    },
-  },
+  -- tmux mode: 'session' (default, each worktree gets its own session) or
+  --            'window' (all worktrees as windows in a shared session)
+  tmux_mode = 'session',
+  -- Name of the shared tmux session (required when tmux_mode = 'window')
+  shared_session_name = nil,
+  -- Kill the shared session when the last window is removed
+  auto_kill_empty_session = true,
+  -- Project-specific configurations (loaded from worktree-tmux-projects.lua)
+  projects = require('custom.worktree-tmux-projects'),
 }
 
 -- Helper functions
@@ -134,6 +89,16 @@ local function get_session_name(branch, path, config)
   return config.session_prefix .. name
 end
 
+local function get_window_name(branch, path, config)
+  local name
+  if config.use_branch_name and branch then
+    name = branch
+  else
+    name = path:match '([^/]+)$'
+  end
+  return name:gsub('[^%w%-_]', '_')
+end
+
 local function tmux_command(cmd)
   local output = vim.fn.system(cmd)
   local success = vim.v.shell_error == 0
@@ -145,33 +110,91 @@ local function tmux_session_exists(session_name)
   return success
 end
 
-local function tmux_send_keys(session_name, pane, text)
-  local target = string.format('%s:0.%d', session_name, pane)
+local function tmux_window_exists(session_name, window_name)
+  local success = tmux_command(
+    string.format("tmux list-windows -t %s -F '#{window_name}' 2>/dev/null | grep -qx %s",
+      vim.fn.shellescape(session_name),
+      vim.fn.shellescape(window_name)))
+  return success
+end
+
+-- window_target: e.g. "session:0" or "session:window_name"
+local function tmux_send_keys(window_target, pane, text)
+  local target = string.format('%s.%d', window_target, pane)
   vim.fn.system({'tmux', 'send-keys', '-t', target, text, 'C-m'})
 end
 
-local function create_custom_layout(session_name, path, layout)
+-- window_target: e.g. "session:0" or "session:window_name"
+local function create_custom_layout(window_target, path, layout)
   if not layout or #layout == 0 then
     return
   end
-  
+
   for _, split in ipairs(layout) do
-    local target = split.target_pane and string.format('%s:0.%d', session_name, split.target_pane) or string.format('%s:0', session_name)
+    local target = split.target_pane and string.format('%s.%d', window_target, split.target_pane) or window_target
     local split_cmd = string.format('tmux split-window -t %s -%s -l %d%% -c %s',
       target,
       split.direction,
       split.size,
       vim.fn.shellescape(path))
-    
+
     local success, result = tmux_command(split_cmd)
     if not success then
       vim.notify('Failed to create split: ' .. result, vim.log.levels.WARN)
       break  -- Stop creating more splits if one fails
     end
   end
-  
+
   -- Select the first pane (where nvim will be)
-  tmux_command(string.format('tmux select-pane -t %s:0.0', session_name))
+  tmux_command(string.format('tmux select-pane -t %s.0', window_target))
+end
+
+-- Apply layout, pane commands, and nvim to a window_target
+local function setup_window_layout(window_target, path, config)
+  -- Wait a bit for the shell to initialize properly
+  vim.cmd('sleep 300m')
+
+  -- Create custom layout if specified, otherwise create simple split
+  if config.custom_layout then
+    create_custom_layout(window_target, path, config.custom_layout)
+  elseif config.create_split_pane then
+    local split_cmd = string.format('tmux split-window -t %s -%s -l %d%% -c %s',
+      window_target,
+      config.split_direction,
+      config.split_size,
+      vim.fn.shellescape(path))
+
+    local split_success, split_result = tmux_command(split_cmd)
+    if not split_success then
+      vim.notify('Failed to create split pane: ' .. split_result, vim.log.levels.WARN)
+    else
+      tmux_command(string.format('tmux select-pane -t %s.0', window_target))
+    end
+  end
+
+  -- Execute pane-specific commands if configured
+  if config.pane_commands then
+    for pane_num, commands in pairs(config.pane_commands) do
+      if type(commands) == 'string' then
+        tmux_send_keys(window_target, pane_num, commands)
+      elseif type(commands) == 'table' then
+        for _, command in ipairs(commands) do
+          tmux_send_keys(window_target, pane_num, command)
+        end
+      end
+    end
+  end
+
+  -- Start nvim in the first pane if configured
+  if config.auto_open_nvim then
+    local target = string.format('%s.0', window_target)
+    vim.fn.system({'tmux', 'send-keys', '-t', target, 'C-c', 'C-u'})
+    tmux_send_keys(window_target, 0, config.nvim_command)
+    if config.nvim_startup_command then
+      vim.cmd('sleep 1000m')
+      tmux_send_keys(window_target, 0, config.nvim_startup_command)
+    end
+  end
 end
 
 local function handle_tmux_session(session_name, path, config)
@@ -217,63 +240,152 @@ local function handle_tmux_session(session_name, path, config)
       vim.notify('Failed to create session: ' .. result, vim.log.levels.ERROR)
       return
     end
-    
-    -- Wait a bit for the shell to initialize properly
-    vim.cmd('sleep 300m')
-    
-    -- Create custom layout if specified, otherwise create simple split
-    if config.custom_layout then
-      create_custom_layout(session_name, path, config.custom_layout)
-    elseif config.create_split_pane then
-      local split_cmd = string.format('tmux split-window -t %s:0 -%s -l %d%% -c %s',
-        session_name,
-        config.split_direction,
-        config.split_size,
-        vim.fn.shellescape(path))
-      
-      local split_success, split_result = tmux_command(split_cmd)
-      if not split_success then
-        vim.notify('Failed to create split pane: ' .. split_result, vim.log.levels.WARN)
-      else
-        -- Select the first pane (left/top)
-        tmux_command(string.format('tmux select-pane -t %s:0.0', session_name))
-      end
-    end
-    
-    -- Execute pane-specific commands if configured
-    if config.pane_commands then
-      for pane_num, commands in pairs(config.pane_commands) do
-        if type(commands) == 'string' then
-          tmux_send_keys(session_name, pane_num, commands)
-        elseif type(commands) == 'table' then
-          for _, command in ipairs(commands) do
-            tmux_send_keys(session_name, pane_num, command)
-          end
-        end
-      end
-    end
-    
-    -- Start nvim in the first pane if configured
-    if config.auto_open_nvim then
-      -- Clear the line first in case there's any residual text
-      local target = string.format('%s:0.0', session_name)
-      vim.fn.system({'tmux', 'send-keys', '-t', target, 'C-c', 'C-u'})
 
-      -- Send nvim command
-      tmux_send_keys(session_name, 0, config.nvim_command)
+    setup_window_layout(session_name .. ':0', path, config)
 
-      -- Send vim startup command if configured
-      if config.nvim_startup_command then
-        -- Wait for nvim to start
-        vim.cmd('sleep 1000m')
-
-        tmux_send_keys(session_name, 0, config.nvim_startup_command)
-      end
-    end
-    
     -- Switch to new session
     vim.cmd(string.format('silent !tmux switch-client -t %s', session_name))
     vim.cmd 'redraw!'
+  end
+end
+
+local function handle_tmux_window(session_name, window_name, path, config)
+  if not vim.env.TMUX then
+    vim.notify 'Not in tmux, skipping session management'
+    return
+  end
+
+  if tmux_session_exists(session_name) then
+    if tmux_window_exists(session_name, window_name) then
+      -- Window already exists, just switch to it
+      vim.cmd(string.format('silent !tmux switch-client -t %s:%s',
+        session_name, window_name))
+      vim.cmd 'redraw!'
+    else
+      -- Session exists but window doesn't — create the window
+      local create_cmd
+      local envrc_path = path .. '/.envrc'
+      local has_envrc = vim.fn.filereadable(envrc_path) == 1
+
+      if has_envrc and config.auto_direnv_allow then
+        create_cmd = string.format(
+          'tmux new-window -t %s -n %s -c %s "direnv allow && exec $SHELL"',
+          vim.fn.shellescape(session_name),
+          vim.fn.shellescape(window_name),
+          vim.fn.shellescape(path))
+      else
+        create_cmd = string.format('tmux new-window -t %s -n %s -c %s',
+          vim.fn.shellescape(session_name),
+          vim.fn.shellescape(window_name),
+          vim.fn.shellescape(path))
+      end
+
+      local success, result = tmux_command(create_cmd)
+      if not success then
+        vim.notify('Failed to create window: ' .. result, vim.log.levels.ERROR)
+        return
+      end
+
+      local window_target = session_name .. ':' .. window_name
+      setup_window_layout(window_target, path, config)
+
+      vim.cmd(string.format('silent !tmux switch-client -t %s:%s',
+        session_name, window_name))
+      vim.cmd 'redraw!'
+    end
+  else
+    -- Session doesn't exist — create it with the window name
+    local create_cmd
+    local envrc_path = path .. '/.envrc'
+    local has_envrc = vim.fn.filereadable(envrc_path) == 1
+
+    if has_envrc and config.auto_direnv_allow then
+      create_cmd = string.format(
+        'tmux new-session -d -s %s -n %s -c %s "direnv allow && exec $SHELL"',
+        vim.fn.shellescape(session_name),
+        vim.fn.shellescape(window_name),
+        vim.fn.shellescape(path))
+    else
+      create_cmd = string.format('tmux new-session -d -s %s -n %s -c %s',
+        vim.fn.shellescape(session_name),
+        vim.fn.shellescape(window_name),
+        vim.fn.shellescape(path))
+    end
+
+    local success, result = tmux_command(create_cmd)
+    if not success then
+      vim.notify('Failed to create session: ' .. result, vim.log.levels.ERROR)
+      return
+    end
+
+    local window_target = session_name .. ':' .. window_name
+    setup_window_layout(window_target, path, config)
+
+    vim.cmd(string.format('silent !tmux switch-client -t %s:%s',
+      session_name, window_name))
+    vim.cmd 'redraw!'
+  end
+end
+
+local function dispatch_tmux(branch, path, config)
+  if config.tmux_mode == 'window' then
+    local session_name = config.shared_session_name
+    if not session_name then
+      vim.notify('shared_session_name is required when tmux_mode = "window"', vim.log.levels.ERROR)
+      return
+    end
+    local window_name = get_window_name(branch, path, config)
+    handle_tmux_window(session_name, window_name, path, config)
+  else
+    local session_name = get_session_name(branch, path, config)
+    handle_tmux_session(session_name, path, config)
+  end
+end
+
+local function kill_tmux_target(branch, path, config)
+  if config.tmux_mode == 'window' then
+    local session_name = config.shared_session_name
+    if not session_name then return end
+    local window_name = get_window_name(branch, path, config)
+
+    if not tmux_session_exists(session_name) then return end
+    if not tmux_window_exists(session_name, window_name) then return end
+
+    -- Count windows in the session
+    local _, count_str = tmux_command(
+      string.format("tmux list-windows -t %s 2>/dev/null | wc -l",
+        vim.fn.shellescape(session_name)))
+    local window_count = tonumber(vim.trim(count_str)) or 0
+
+    if window_count <= 1 and config.auto_kill_empty_session then
+      -- Last window — kill the entire session
+      local ok, out = tmux_command(string.format('tmux kill-session -t %s',
+        vim.fn.shellescape(session_name)))
+      if ok then
+        vim.notify('Killed tmux session: ' .. session_name)
+      else
+        vim.notify('Failed to kill session: ' .. out, vim.log.levels.ERROR)
+      end
+    else
+      -- Kill just the window
+      local ok, out = tmux_command(string.format('tmux kill-window -t %s:%s',
+        vim.fn.shellescape(session_name),
+        vim.fn.shellescape(window_name)))
+      if ok then
+        vim.notify('Killed tmux window: ' .. window_name)
+      else
+        vim.notify('Failed to kill window: ' .. out, vim.log.levels.ERROR)
+      end
+    end
+  else
+    local session_name = get_session_name(branch, path, config)
+    if tmux_session_exists(session_name) then
+      vim.notify('Killing tmux session: ' .. session_name)
+      local ok, out = tmux_command(string.format('tmux kill-session -t %s', session_name))
+      if not ok then
+        vim.notify('Failed to kill session: ' .. out, vim.log.levels.ERROR)
+      end
+    end
   end
 end
 
@@ -366,11 +478,10 @@ function M.create_worktree()
       end
       
       vim.notify('Created worktree: ' .. branch_name .. ' at ' .. path)
-      
-      -- Handle tmux session
+
+      -- Handle tmux
       local config = get_project_config(path, M.config)
-      local session_name = get_session_name(branch_name, path, config)
-      handle_tmux_session(session_name, path, config)
+      dispatch_tmux(branch_name, path, config)
     end)
   end)
 end
@@ -401,10 +512,9 @@ function M.switch_worktree()
       return
     end
     
-    -- Handle tmux session
+    -- Handle tmux
     local config = get_project_config(choice.path, M.config)
-    local session_name = get_session_name(choice.branch, choice.path, config)
-    handle_tmux_session(session_name, choice.path, config)
+    dispatch_tmux(choice.branch, choice.path, config)
   end)
 end
 
@@ -464,6 +574,9 @@ function M.delete_worktree()
         return
       end
       
+      -- Resolve config before deleting (path won't exist after removal)
+      local config = get_project_config(choice.path, M.config)
+
       -- Delete the worktree
       local delete_cmd = string.format('git worktree remove %s', vim.fn.shellescape(choice.path))
       local success, result = tmux_command(delete_cmd)
@@ -471,20 +584,12 @@ function M.delete_worktree()
         vim.notify('Failed to delete worktree: ' .. result, vim.log.levels.ERROR)
         return
       end
-      
+
       vim.notify('Deleted worktree: ' .. choice.branch)
-      
-      -- Kill tmux session if configured
-      local config = get_project_config(choice.path, M.config)
+
+      -- Kill tmux target if configured
       if config.auto_kill_session then
-        local session_name = get_session_name(choice.branch, choice.path, config)
-        if tmux_session_exists(session_name) then
-          vim.notify('Killing tmux session: ' .. session_name)
-          local kill_success, kill_result = tmux_command(string.format('tmux kill-session -t %s', session_name))
-          if not kill_success then
-            vim.notify('Failed to kill session: ' .. kill_result, vim.log.levels.ERROR)
-          end
-        end
+        kill_tmux_target(choice.branch, choice.path, config)
       end
     end)
   end)
@@ -652,17 +757,9 @@ function M.merge_worktree()
           end
         end
 
-        -- Cleanup: kill tmux session
+        -- Cleanup: kill tmux target
         if config.auto_kill_session then
-          local session_name = get_session_name(choice.branch, choice.path, config)
-          if tmux_session_exists(session_name) then
-            local kill_ok, kill_out = tmux_command(string.format('tmux kill-session -t %s', session_name))
-            if not kill_ok then
-              vim.notify('Failed to kill session: ' .. kill_out, vim.log.levels.WARN)
-            else
-              vim.notify('Killed tmux session: ' .. session_name)
-            end
-          end
+          kill_tmux_target(choice.branch, choice.path, config)
         end
       end)
     end)
