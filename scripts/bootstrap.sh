@@ -53,6 +53,14 @@ else
   echo "==> npm global packages already installed"
 fi
 
+# rclone (installed from official binary on macOS for FUSE mount support)
+if ! command -v rclone &>/dev/null; then
+  echo "==> Installing rclone..."
+  sudo -v ; curl https://rclone.org/install.sh | sudo bash
+else
+  echo "==> rclone already installed"
+fi
+
 # Claude Code
 if ! command -v claude &>/dev/null; then
   echo "==> Installing Claude Code..."

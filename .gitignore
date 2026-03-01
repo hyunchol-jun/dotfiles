@@ -12,3 +12,4 @@ config/gatsby
 config/grammarly-languageserver
 
 github-copilot/
+config/rclone/

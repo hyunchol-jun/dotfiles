@@ -35,6 +35,12 @@ alias pgstart='~/dotfiles/postgres-external-scripts/pg-toggle.sh start'
 alias pgstop='~/dotfiles/postgres-external-scripts/pg-toggle.sh stop'
 alias pgstatus='~/dotfiles/postgres-external-scripts/pg-toggle.sh status'
 
+alias dbls='rclone ls dropbox-implentio:/'
+alias dbcat='rclone cat'
+alias dbcp='rclone copy'
+alias dbmount='mkdir -p ~/Dropbox && rclone serve nfs dropbox-implentio:/ --read-only --vfs-cache-mode full --addr :2049 &; sleep 1 && mount_nfs -o port=2049,mountport=2049,tcp,vers=3 localhost:/ ~/Dropbox'
+alias dbumount='umount ~/Dropbox && kill $(lsof -ti :2049) 2>/dev/null'
+
 export EDITOR='nvim'
 
 # Added for Android development

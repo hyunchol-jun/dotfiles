@@ -40,6 +40,12 @@ Per-project overrides: add a `.mise.toml` in any project directory to pin specif
 1. Open tmux
 2. Press `prefix + I` to install plugins via TPM
 
+### Dropbox via rclone NFS
+
+1. Run `rclone config` to set up Dropbox OAuth (remote name: `dropbox-implentio`)
+2. Mount with `dbmount`, then browse `~/Dropbox` in yazi
+3. Unmount with `dbumount`
+
 ### Reload tmux config
 
 ```bash
