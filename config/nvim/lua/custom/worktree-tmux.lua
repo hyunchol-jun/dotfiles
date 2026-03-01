@@ -24,6 +24,10 @@ M.config = {
   split_direction = 'h',
   -- Size of the split pane (percentage)
   split_size = 30,
+  -- Merge settings
+  default_merge_strategy = 'merge', -- 'merge', 'rebase', or 'squash'
+  auto_delete_branch = true,        -- delete branch after successful merge
+  merge_target_branch = nil,        -- nil = auto-detect via git symbolic-ref refs/remotes/origin/HEAD
   -- Project-specific configurations
   projects = {
     ['implentio-app'] = {
@@ -467,6 +471,172 @@ function M.delete_worktree()
   end)
 end
 
+local function detect_default_branch()
+  local success, output = tmux_command('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null')
+  if success and output ~= '' then
+    return output:match('refs/remotes/origin/(.+)')
+  end
+  -- Fallback
+  return 'main'
+end
+
+local function find_main_worktree_path(worktrees)
+  for _, wt in ipairs(worktrees) do
+    -- The main worktree is the bare repo checkout or the one whose path ends with the target branch dir
+    -- In porcelain output, the first entry is typically the main worktree
+    if not wt.branch or wt.branch == 'main' or wt.branch == 'master' then
+      return wt.path
+    end
+  end
+  -- Fallback: first worktree
+  if #worktrees > 0 then
+    return worktrees[1].path
+  end
+  return nil
+end
+
+function M.merge_worktree()
+  local worktrees = list_worktrees()
+  if #worktrees == 0 then
+    vim.notify('No worktrees found', vim.log.levels.WARN)
+    return
+  end
+
+  local config = M.config
+  local target_branch = config.merge_target_branch or detect_default_branch()
+
+  -- Filter to non-target worktrees
+  local mergeable = {}
+  for _, wt in ipairs(worktrees) do
+    if wt.branch and wt.branch ~= target_branch then
+      table.insert(mergeable, wt)
+    end
+  end
+
+  if #mergeable == 0 then
+    vim.notify('No worktrees to merge (only ' .. target_branch .. ' found)', vim.log.levels.WARN)
+    return
+  end
+
+  local items = {}
+  for _, wt in ipairs(mergeable) do
+    table.insert(items, {
+      text = string.format('%s (%s)', wt.branch, wt.path),
+      branch = wt.branch,
+      path = wt.path,
+    })
+  end
+
+  vim.ui.select(items, {
+    prompt = 'Select worktree to merge into ' .. target_branch .. ':',
+    format_item = function(item) return item.text end,
+  }, function(choice)
+    if not choice then return end
+
+    local strategies = { 'merge', 'rebase', 'squash' }
+    vim.ui.select(strategies, {
+      prompt = 'Merge strategy:',
+    }, function(strategy)
+      if not strategy then return end
+
+      vim.ui.select({ 'Yes', 'No' }, {
+        prompt = string.format('Merge %s into %s (%s) and cleanup?', choice.branch, target_branch, strategy),
+      }, function(confirm)
+        if confirm ~= 'Yes' then return end
+
+        -- Find the main worktree path for running merge commands
+        local main_path = find_main_worktree_path(worktrees)
+        if not main_path then
+          vim.notify('Could not find main worktree path', vim.log.levels.ERROR)
+          return
+        end
+
+        -- Checkout target branch in main worktree
+        local checkout_cmd = string.format('git -C %s checkout %s',
+          vim.fn.shellescape(main_path), vim.fn.shellescape(target_branch))
+        local ok, out = tmux_command(checkout_cmd)
+        if not ok then
+          vim.notify('Failed to checkout ' .. target_branch .. ': ' .. out, vim.log.levels.ERROR)
+          return
+        end
+
+        -- Execute merge strategy
+        local merge_cmd
+        if strategy == 'merge' then
+          merge_cmd = string.format('git -C %s merge %s',
+            vim.fn.shellescape(main_path), vim.fn.shellescape(choice.branch))
+        elseif strategy == 'rebase' then
+          merge_cmd = string.format('git -C %s rebase %s',
+            vim.fn.shellescape(main_path), vim.fn.shellescape(choice.branch))
+        elseif strategy == 'squash' then
+          merge_cmd = string.format('git -C %s merge --squash %s',
+            vim.fn.shellescape(main_path), vim.fn.shellescape(choice.branch))
+        end
+
+        ok, out = tmux_command(merge_cmd)
+        if not ok then
+          -- Abort on conflict
+          vim.notify('Merge failed (conflicts?): ' .. out, vim.log.levels.ERROR)
+          if strategy == 'merge' or strategy == 'squash' then
+            tmux_command(string.format('git -C %s merge --abort', vim.fn.shellescape(main_path)))
+          elseif strategy == 'rebase' then
+            tmux_command(string.format('git -C %s rebase --abort', vim.fn.shellescape(main_path)))
+          end
+          vim.notify('Merge aborted. Worktree and branch left intact.', vim.log.levels.WARN)
+          return
+        end
+
+        -- For squash, we need to commit manually
+        if strategy == 'squash' then
+          local commit_cmd = string.format('git -C %s commit -m "Squash merge branch \'%s\'"',
+            vim.fn.shellescape(main_path), choice.branch)
+          ok, out = tmux_command(commit_cmd)
+          if not ok then
+            vim.notify('Squash commit failed: ' .. out, vim.log.levels.ERROR)
+            return
+          end
+        end
+
+        vim.notify(string.format('Merged %s into %s (%s)', choice.branch, target_branch, strategy))
+
+        -- Cleanup: remove worktree
+        local rm_cmd = string.format('git worktree remove %s', vim.fn.shellescape(choice.path))
+        ok, out = tmux_command(rm_cmd)
+        if not ok then
+          vim.notify('Failed to remove worktree: ' .. out, vim.log.levels.ERROR)
+          return
+        end
+        vim.notify('Removed worktree: ' .. choice.path)
+
+        -- Cleanup: delete branch
+        if config.auto_delete_branch then
+          local del_cmd = string.format('git branch -d %s', vim.fn.shellescape(choice.branch))
+          ok, out = tmux_command(del_cmd)
+          if not ok then
+            vim.notify('Failed to delete branch (not fully merged?): ' .. out, vim.log.levels.WARN)
+          else
+            vim.notify('Deleted branch: ' .. choice.branch)
+          end
+        end
+
+        -- Cleanup: kill tmux session
+        local proj_config = get_project_config(choice.path, config)
+        if proj_config.auto_kill_session then
+          local session_name = get_session_name(choice.branch, choice.path, proj_config)
+          if tmux_session_exists(session_name) then
+            local kill_ok, kill_out = tmux_command(string.format('tmux kill-session -t %s', session_name))
+            if not kill_ok then
+              vim.notify('Failed to kill session: ' .. kill_out, vim.log.levels.WARN)
+            else
+              vim.notify('Killed tmux session: ' .. session_name)
+            end
+          end
+        end
+      end)
+    end)
+  end)
+end
+
 -- Setup function
 function M.setup(user_config)
   -- Merge user config with defaults
@@ -476,6 +646,7 @@ function M.setup(user_config)
   vim.api.nvim_create_user_command('WorktreeCreate', M.create_worktree, {})
   vim.api.nvim_create_user_command('WorktreeSwitch', M.switch_worktree, {})
   vim.api.nvim_create_user_command('WorktreeDelete', M.delete_worktree, {})
+  vim.api.nvim_create_user_command('WorktreeMerge', M.merge_worktree, {})
 end
 
 return M

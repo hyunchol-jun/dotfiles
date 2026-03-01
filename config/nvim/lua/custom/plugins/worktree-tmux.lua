@@ -10,5 +10,6 @@ return {
     { '<leader>wtc', '<cmd>WorktreeCreate<cr>', desc = '[W]orktree [T]mux [C]reate' },
     { '<leader>wts', '<cmd>WorktreeSwitch<cr>', desc = '[W]orktree [T]mux [S]witch' },
     { '<leader>wtd', '<cmd>WorktreeDelete<cr>', desc = '[W]orktree [T]mux [D]elete' },
+    { '<leader>wtm', '<cmd>WorktreeMerge<cr>', desc = '[W]orktree [T]mux [M]erge' },
   },
 }
