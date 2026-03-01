@@ -86,13 +86,29 @@ M.config = {
 
 -- Helper functions
 local function get_project_name(path)
-  -- Extract project name from path
-  -- Look for .git directory and get the parent folder name
+  -- Use git to find the shared git directory (works for bare and non-bare repos)
+  local git_common = vim.trim(vim.fn.system(
+    string.format('git -C %s rev-parse --git-common-dir 2>/dev/null', vim.fn.shellescape(path))))
+  if vim.v.shell_error == 0 and git_common ~= '' then
+    -- Resolve to absolute path if relative
+    if not git_common:match('^/') then
+      local abs = vim.trim(vim.fn.system(
+        string.format('realpath %s', vim.fn.shellescape(path .. '/' .. git_common))))
+      if abs ~= '' then
+        git_common = abs
+      end
+    end
+    -- /path/project.git -> project, /path/project/.git -> project
+    local name = git_common:gsub('/%.git$', ''):gsub('%.git$', ''):match('([^/]+)$')
+    if name and name ~= '' then
+      return name
+    end
+  end
+  -- Fallback: extract from path pattern or directory name
   local git_dir = path:match('(.+)%.git')
   if git_dir then
     return git_dir:match('([^/]+)$')
   end
-  -- Fallback: get the top-level directory name
   return path:match('([^/]+)[^/]*$')
 end
 
@@ -114,7 +130,7 @@ local function get_session_name(branch, path, config)
     name = path:match '([^/]+)$'
   end
   -- Clean up the name for tmux
-  name = name:gsub('[%.%:%/]', '_')
+  name = name:gsub('[^%w%-_]', '_')
   return config.session_prefix .. name
 end
 
@@ -127,6 +143,11 @@ end
 local function tmux_session_exists(session_name)
   local success = tmux_command('tmux has-session -t ' .. session_name .. ' 2>/dev/null')
   return success
+end
+
+local function tmux_send_keys(session_name, pane, text)
+  local target = string.format('%s:0.%d', session_name, pane)
+  vim.fn.system({'tmux', 'send-keys', '-t', target, text, 'C-m'})
 end
 
 local function create_custom_layout(session_name, path, layout)
@@ -223,18 +244,10 @@ local function handle_tmux_session(session_name, path, config)
     if config.pane_commands then
       for pane_num, commands in pairs(config.pane_commands) do
         if type(commands) == 'string' then
-          -- Single command
-          tmux_command(string.format('tmux send-keys -t %s:0.%d "%s" C-m',
-            session_name,
-            pane_num,
-            commands))
+          tmux_send_keys(session_name, pane_num, commands)
         elseif type(commands) == 'table' then
-          -- Multiple commands - execute in sequence
           for _, command in ipairs(commands) do
-            tmux_command(string.format('tmux send-keys -t %s:0.%d "%s" C-m',
-              session_name,
-              pane_num,
-              command))
+            tmux_send_keys(session_name, pane_num, command)
           end
         end
       end
@@ -243,22 +256,18 @@ local function handle_tmux_session(session_name, path, config)
     -- Start nvim in the first pane if configured
     if config.auto_open_nvim then
       -- Clear the line first in case there's any residual text
-      tmux_command(string.format('tmux send-keys -t %s:0.0 C-c C-u', session_name))
-      
+      local target = string.format('%s:0.0', session_name)
+      vim.fn.system({'tmux', 'send-keys', '-t', target, 'C-c', 'C-u'})
+
       -- Send nvim command
-      tmux_command(string.format('tmux send-keys -t %s:0.0 "%s" C-m',
-        session_name,
-        config.nvim_command))
-      
+      tmux_send_keys(session_name, 0, config.nvim_command)
+
       -- Send vim startup command if configured
       if config.nvim_startup_command then
         -- Wait for nvim to start
         vim.cmd('sleep 1000m')
-        
-        -- Send the configured vim command
-        tmux_command(string.format('tmux send-keys -t %s:0.0 "%s" C-m',
-          session_name,
-          config.nvim_startup_command))
+
+        tmux_send_keys(session_name, 0, config.nvim_startup_command)
       end
     end
     
@@ -399,6 +408,15 @@ function M.switch_worktree()
   end)
 end
 
+local function detect_default_branch()
+  local success, output = tmux_command('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null')
+  if success and output ~= '' then
+    return output:match('refs/remotes/origin/(.+)')
+  end
+  -- Fallback
+  return 'main'
+end
+
 function M.delete_worktree()
   local worktrees = list_worktrees()
   if #worktrees == 0 then
@@ -406,10 +424,11 @@ function M.delete_worktree()
     return
   end
   
-  -- Filter out main worktree
+  -- Filter out bare repo entry and main branch worktree
+  local default_branch = detect_default_branch()
   local deletable_worktrees = {}
   for _, wt in ipairs(worktrees) do
-    if wt.branch then  -- Main worktree has no branch in porcelain output
+    if wt.branch and wt.branch ~= default_branch then
       table.insert(deletable_worktrees, wt)
     end
   end
@@ -471,20 +490,9 @@ function M.delete_worktree()
   end)
 end
 
-local function detect_default_branch()
-  local success, output = tmux_command('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null')
-  if success and output ~= '' then
-    return output:match('refs/remotes/origin/(.+)')
-  end
-  -- Fallback
-  return 'main'
-end
-
-local function find_main_worktree_path(worktrees)
+local function find_main_worktree_path(worktrees, target_branch)
   for _, wt in ipairs(worktrees) do
-    -- The main worktree is the bare repo checkout or the one whose path ends with the target branch dir
-    -- In porcelain output, the first entry is typically the main worktree
-    if not wt.branch or wt.branch == 'main' or wt.branch == 'master' then
+    if not wt.branch or wt.branch == target_branch then
       return wt.path
     end
   end
@@ -502,8 +510,7 @@ function M.merge_worktree()
     return
   end
 
-  local config = M.config
-  local target_branch = config.merge_target_branch or detect_default_branch()
+  local target_branch = M.config.merge_target_branch or detect_default_branch()
 
   -- Filter to non-target worktrees
   local mergeable = {}
@@ -533,19 +540,33 @@ function M.merge_worktree()
   }, function(choice)
     if not choice then return end
 
-    local strategies = { 'merge', 'rebase', 'squash' }
+    -- Resolve project-specific config after worktree selection
+    local config = get_project_config(choice.path, M.config)
+    local cfg_target = config.merge_target_branch or target_branch
+
+    -- Build strategies list with configured default first
+    local all_strategies = { 'merge', 'rebase', 'squash' }
+    local strategies = {}
+    local default_strategy = config.default_merge_strategy or 'merge'
+    table.insert(strategies, default_strategy)
+    for _, s in ipairs(all_strategies) do
+      if s ~= default_strategy then
+        table.insert(strategies, s)
+      end
+    end
+
     vim.ui.select(strategies, {
       prompt = 'Merge strategy:',
     }, function(strategy)
       if not strategy then return end
 
       vim.ui.select({ 'Yes', 'No' }, {
-        prompt = string.format('Merge %s into %s (%s) and cleanup?', choice.branch, target_branch, strategy),
+        prompt = string.format('Merge %s into %s (%s) and cleanup?', choice.branch, cfg_target, strategy),
       }, function(confirm)
         if confirm ~= 'Yes' then return end
 
         -- Find the main worktree path for running merge commands
-        local main_path = find_main_worktree_path(worktrees)
+        local main_path = find_main_worktree_path(worktrees, cfg_target)
         if not main_path then
           vim.notify('Could not find main worktree path', vim.log.levels.ERROR)
           return
@@ -553,51 +574,63 @@ function M.merge_worktree()
 
         -- Checkout target branch in main worktree
         local checkout_cmd = string.format('git -C %s checkout %s',
-          vim.fn.shellescape(main_path), vim.fn.shellescape(target_branch))
+          vim.fn.shellescape(main_path), vim.fn.shellescape(cfg_target))
         local ok, out = tmux_command(checkout_cmd)
         if not ok then
-          vim.notify('Failed to checkout ' .. target_branch .. ': ' .. out, vim.log.levels.ERROR)
+          vim.notify('Failed to checkout ' .. cfg_target .. ': ' .. out, vim.log.levels.ERROR)
           return
         end
 
         -- Execute merge strategy
-        local merge_cmd
         if strategy == 'merge' then
-          merge_cmd = string.format('git -C %s merge %s',
+          local merge_cmd = string.format('git -C %s merge %s',
             vim.fn.shellescape(main_path), vim.fn.shellescape(choice.branch))
-        elseif strategy == 'rebase' then
-          merge_cmd = string.format('git -C %s rebase %s',
-            vim.fn.shellescape(main_path), vim.fn.shellescape(choice.branch))
-        elseif strategy == 'squash' then
-          merge_cmd = string.format('git -C %s merge --squash %s',
-            vim.fn.shellescape(main_path), vim.fn.shellescape(choice.branch))
-        end
-
-        ok, out = tmux_command(merge_cmd)
-        if not ok then
-          -- Abort on conflict
-          vim.notify('Merge failed (conflicts?): ' .. out, vim.log.levels.ERROR)
-          if strategy == 'merge' or strategy == 'squash' then
-            tmux_command(string.format('git -C %s merge --abort', vim.fn.shellescape(main_path)))
-          elseif strategy == 'rebase' then
-            tmux_command(string.format('git -C %s rebase --abort', vim.fn.shellescape(main_path)))
-          end
-          vim.notify('Merge aborted. Worktree and branch left intact.', vim.log.levels.WARN)
-          return
-        end
-
-        -- For squash, we need to commit manually
-        if strategy == 'squash' then
-          local commit_cmd = string.format('git -C %s commit -m "Squash merge branch \'%s\'"',
-            vim.fn.shellescape(main_path), choice.branch)
-          ok, out = tmux_command(commit_cmd)
+          ok, out = tmux_command(merge_cmd)
           if not ok then
-            vim.notify('Squash commit failed: ' .. out, vim.log.levels.ERROR)
+            vim.notify('Merge failed (conflicts?): ' .. out, vim.log.levels.ERROR)
+            tmux_command(string.format('git -C %s merge --abort', vim.fn.shellescape(main_path)))
+            vim.notify('Merge aborted. Worktree and branch left intact.', vim.log.levels.WARN)
+            return
+          end
+        elseif strategy == 'rebase' then
+          -- Two-step: rebase feature onto target, then fast-forward target
+          local rebase_cmd = string.format('git -C %s rebase %s',
+            vim.fn.shellescape(choice.path), vim.fn.shellescape(cfg_target))
+          ok, out = tmux_command(rebase_cmd)
+          if not ok then
+            vim.notify('Rebase failed (conflicts?): ' .. out, vim.log.levels.ERROR)
+            tmux_command(string.format('git -C %s rebase --abort', vim.fn.shellescape(choice.path)))
+            vim.notify('Rebase aborted. Worktree and branch left intact.', vim.log.levels.WARN)
+            return
+          end
+          local ff_cmd = string.format('git -C %s merge --ff-only %s',
+            vim.fn.shellescape(main_path), vim.fn.shellescape(choice.branch))
+          ok, out = tmux_command(ff_cmd)
+          if not ok then
+            vim.notify('Fast-forward failed: ' .. out, vim.log.levels.ERROR)
+            tmux_command(string.format('git -C %s merge --abort', vim.fn.shellescape(main_path)))
+            return
+          end
+        elseif strategy == 'squash' then
+          local squash_cmd = string.format('git -C %s merge --squash %s',
+            vim.fn.shellescape(main_path), vim.fn.shellescape(choice.branch))
+          ok, out = tmux_command(squash_cmd)
+          if not ok then
+            vim.notify('Squash merge failed (conflicts?): ' .. out, vim.log.levels.ERROR)
+            tmux_command(string.format('git -C %s merge --abort', vim.fn.shellescape(main_path)))
+            vim.notify('Merge aborted. Worktree and branch left intact.', vim.log.levels.WARN)
+            return
+          end
+          -- Commit with safe argument passing
+          local commit_msg = string.format("Squash merge branch '%s'", choice.branch)
+          vim.fn.system({'git', '-C', main_path, 'commit', '-m', commit_msg})
+          if vim.v.shell_error ~= 0 then
+            vim.notify('Squash commit failed', vim.log.levels.ERROR)
             return
           end
         end
 
-        vim.notify(string.format('Merged %s into %s (%s)', choice.branch, target_branch, strategy))
+        vim.notify(string.format('Merged %s into %s (%s)', choice.branch, cfg_target, strategy))
 
         -- Cleanup: remove worktree
         local rm_cmd = string.format('git worktree remove %s', vim.fn.shellescape(choice.path))
@@ -620,9 +653,8 @@ function M.merge_worktree()
         end
 
         -- Cleanup: kill tmux session
-        local proj_config = get_project_config(choice.path, config)
-        if proj_config.auto_kill_session then
-          local session_name = get_session_name(choice.branch, choice.path, proj_config)
+        if config.auto_kill_session then
+          local session_name = get_session_name(choice.branch, choice.path, config)
           if tmux_session_exists(session_name) then
             local kill_ok, kill_out = tmux_command(string.format('tmux kill-session -t %s', session_name))
             if not kill_ok then
