@@ -1,9 +1,14 @@
+local vault_path = vim.fn.expand '~/Library/Mobile Documents/iCloud~md~obsidian/Documents/vimwiki'
+
 return {
   {
     'epwalsh/obsidian.nvim',
     version = '*',
     lazy = true,
     ft = 'markdown',
+    cond = function()
+      return vim.fn.isdirectory(vault_path) == 1
+    end,
     dependencies = {
       'nvim-lua/plenary.nvim',
     },
@@ -11,7 +16,7 @@ return {
       workspaces = {
         {
           name = 'vimwiki',
-          path = vim.fn.expand '~/Library/Mobile Documents/iCloud~md~obsidian/Documents/vimwiki',
+          path = vault_path,
         },
       },
       daily_notes = {
