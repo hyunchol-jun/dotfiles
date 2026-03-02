@@ -4,6 +4,9 @@ MACHINE_NAME=$(hostname)
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 export PATH=~/bin:~/.local/bin:$PATH
 
+# Nix
+[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ] && . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+
 # Prompt
 autoload -Uz vcs_info
 precmd() { vcs_info }
@@ -40,6 +43,9 @@ alias dbcat='rclone cat'
 alias dbcp='rclone copy'
 alias dbmount='mkdir -p ~/Dropbox && rclone serve nfs dropbox-implentio:/ --read-only --vfs-cache-mode full --addr :2049 &; sleep 1 && mount_nfs -o port=2049,mountport=2049,tcp,vers=3 localhost:/ ~/Dropbox'
 alias dbumount='umount ~/Dropbox && kill $(lsof -ti :2049) 2>/dev/null'
+
+alias dbt-r='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h localhost -r Reader'
+alias dbt-rw='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h localhost -r Superuser'
 
 export EDITOR='nvim'
 
