@@ -52,6 +52,45 @@ Per-project overrides: add a `.mise.toml` in any project directory to pin specif
 tmux source ~/.tmux.conf
 ```
 
+## Worktree-Tmux (Neovim Plugin)
+
+A custom Neovim plugin for managing git worktrees with tmux integration. Provides `:WorktreeCreate`, `:WorktreeSwitch`, `:WorktreeDelete`, and `:WorktreeMerge` commands.
+
+### Setting up a bare repo
+
+The plugin works best with bare-cloned repositories. To set one up:
+
+```bash
+# 1. Clone as bare repo
+git clone --bare <repo-url> ~/path/to/repo.git
+
+# 2. Fix the fetch refspec (bare clones don't set this up by default)
+cd ~/path/to/repo.git
+git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+
+# 3. Fetch remote branches
+git fetch origin
+
+# 4. Set the default branch HEAD ref (used by the plugin to detect the default branch)
+git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
+
+# 5. Create a worktree for the main branch
+git worktree add main main
+```
+
+This gives you a structure like:
+
+```
+~/path/to/repo.git/       # bare repo (git data only)
+~/path/to/repo.git/main/  # main branch worktree
+```
+
+New worktrees created via `:WorktreeCreate` will appear as siblings (e.g. `~/path/to/repo.git/feature-branch/`).
+
+### Project-specific config
+
+Per-project overrides (tmux mode, custom layouts, pane commands) are defined in `config/nvim/lua/custom/worktree-tmux-projects.lua`. The key must match the git repository directory name (e.g. `repo` from `repo.git`).
+
 ## Structure
 
 ```
