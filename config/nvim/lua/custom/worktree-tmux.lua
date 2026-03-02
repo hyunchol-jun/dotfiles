@@ -327,6 +327,30 @@ local function handle_tmux_window(session_name, window_name, path, config)
   end
 end
 
+local function detect_default_branch()
+  local success, output = tmux_command('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null')
+  if success and output ~= '' then
+    return output:match('refs/remotes/origin/(.+)')
+  end
+  -- Fallback
+  return 'main'
+end
+
+local function find_main_worktree_path(worktrees, target_branch)
+  for _, wt in ipairs(worktrees) do
+    if wt.branch == target_branch then
+      return wt.path
+    end
+  end
+  -- Fallback: first non-bare worktree
+  for _, wt in ipairs(worktrees) do
+    if not wt.bare then
+      return wt.path
+    end
+  end
+  return nil
+end
+
 local function dispatch_tmux(branch, path, config)
   if config.tmux_mode == 'window' then
     local session_name = config.shared_session_name
@@ -419,6 +443,8 @@ local function list_worktrees()
       current_worktree.branch = line:match('^branch refs/heads/(.+)')
     elseif line:match('^detached') then
       current_worktree.branch = 'detached'
+    elseif line:match('^bare$') then
+      current_worktree.bare = true
     end
   end
   
@@ -427,6 +453,54 @@ local function list_worktrees()
   end
   
   return worktrees
+end
+
+local function resolve_main_path(path)
+  local wts = list_worktrees()
+  local default_branch = detect_default_branch()
+  local main_path = find_main_worktree_path(wts, default_branch)
+  if not main_path or main_path == path then
+    return nil
+  end
+  return main_path
+end
+
+local function copy_from_main(path, config)
+  if not config.copy_from_main or #config.copy_from_main == 0 then
+    return
+  end
+  local main_path = resolve_main_path(path)
+  if not main_path then return end
+  for _, file in ipairs(config.copy_from_main) do
+    local src = main_path .. '/' .. file
+    local dst = path .. '/' .. file
+    local dst_dir = vim.fn.fnamemodify(dst, ':h')
+    tmux_command(string.format('mkdir -p %s', vim.fn.shellescape(dst_dir)))
+    local ok, out = tmux_command(string.format('cp %s %s', vim.fn.shellescape(src), vim.fn.shellescape(dst)))
+    if not ok then
+      vim.notify('Failed to copy ' .. file .. ': ' .. out, vim.log.levels.WARN)
+    end
+  end
+end
+
+local function symlink_from_main(path, config)
+  if not config.symlink_from_main or #config.symlink_from_main == 0 then
+    return
+  end
+  local main_path = resolve_main_path(path)
+  if not main_path then return end
+  for _, file in ipairs(config.symlink_from_main) do
+    local src = main_path .. '/' .. file
+    local dst = path .. '/' .. file
+    local dst_dir = vim.fn.fnamemodify(dst, ':h')
+    tmux_command(string.format('mkdir -p %s', vim.fn.shellescape(dst_dir)))
+    -- Remove existing file/symlink before creating
+    tmux_command(string.format('rm -f %s', vim.fn.shellescape(dst)))
+    local ok, out = tmux_command(string.format('ln -s %s %s', vim.fn.shellescape(src), vim.fn.shellescape(dst)))
+    if not ok then
+      vim.notify('Failed to symlink ' .. file .. ': ' .. out, vim.log.levels.WARN)
+    end
+  end
 end
 
 -- Public functions
@@ -481,6 +555,11 @@ function M.create_worktree()
 
       -- Handle tmux
       local config = get_project_config(path, M.config)
+
+      -- Copy/symlink files from main worktree if configured
+      copy_from_main(path, config)
+      symlink_from_main(path, config)
+
       dispatch_tmux(branch_name, path, config)
     end)
   end)
@@ -516,15 +595,6 @@ function M.switch_worktree()
     local config = get_project_config(choice.path, M.config)
     dispatch_tmux(choice.branch, choice.path, config)
   end)
-end
-
-local function detect_default_branch()
-  local success, output = tmux_command('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null')
-  if success and output ~= '' then
-    return output:match('refs/remotes/origin/(.+)')
-  end
-  -- Fallback
-  return 'main'
 end
 
 function M.delete_worktree()
@@ -593,19 +663,6 @@ function M.delete_worktree()
       end
     end)
   end)
-end
-
-local function find_main_worktree_path(worktrees, target_branch)
-  for _, wt in ipairs(worktrees) do
-    if not wt.branch or wt.branch == target_branch then
-      return wt.path
-    end
-  end
-  -- Fallback: first worktree
-  if #worktrees > 0 then
-    return worktrees[1].path
-  end
-  return nil
 end
 
 function M.merge_worktree()

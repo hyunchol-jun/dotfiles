@@ -33,8 +33,17 @@ return {
     auto_open_nvim = true,
     nvim_command = 'nvim',
     nvim_startup_command = ':!pnpm i',
+    copy_from_main = {
+    },
+    symlink_from_main = {
+      '.kube/config.user.yaml',
+      'packages/implentio-app/packages/toolbelt/public/config/env.js',
+      'packages/implentio-app/packages/api-v2/.env',
+      'packages/reconciliation/projects/api/build/resources/main/application-local.yml',
+    },
     custom_layout = {
       { direction = 'h', size = 50 },
+      { target_pane = 1, direction = 'v', size = 50 },
     },
     pane_commands = {
       [1] = 'cc',

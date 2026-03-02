@@ -276,36 +276,33 @@ ENV_FILE=~/Implentio/db/.env
 
 # Check if file exists
 if [ ! -f "$ENV_FILE" ]; then
-    echo "Error: $ENV_FILE does not exist. Failed to save URL to the file."
+    echo "Warning: $ENV_FILE does not exist. Skipping."
+else
+    # Replace the line starting with DB_URL= with new value
+    # -i for in-place editing
+    sed -i "s#^DB_UI_IMPLENTIO=.*#DB_UI_IMPLENTIO=$DBURL#" "$ENV_FILE"
+    echo "Updated DB_UI_IMPLENTIO in $ENV_FILE"
 fi
 
-# Replace the line starting with DB_URL= with new value
-# -i for in-place editing
-sed -i "s#^DB_UI_IMPLENTIO=.*#DB_UI_IMPLENTIO=$DBURL#" "$ENV_FILE"
+BASE_DIR=~/Implentio/stack/main
+API_V2_ENV=$BASE_DIR/packages/implentio-app/packages/api-v2/.env
 
-echo "Updated DB_UI_IMPLENTIO in $ENV_FILE"
-
-APP_ENV=~/Implentio/implentio-app.git/main/packages/api-v2/.env
-
-if [ ! -f "$APP_ENV" ]; then
-    echo "Error: $APP_ENV does not exist. Failed to save URL to the file."
+if [ ! -f "$API_V2_ENV" ]; then
+    echo "Warning: $API_V2_ENV does not exist. Skipping."
+else
+    sed -i "s#^CDM_DB_URL=.*#CDM_DB_URL=$DBURL?schema=cdm#" "$API_V2_ENV"
+    sed -i "s#^CLIENT_DB_URL=.*#CLIENT_DB_URL=$DBURL?schema=client#" "$API_V2_ENV"
+    echo "Updated DB_URL in $API_V2_ENV"
 fi
-
-sed -i "s#^CDM_DB_URL=.*#CDM_DB_URL=$DBURL?schema=cdm#" "$APP_ENV"
-sed -i "s#^CLIENT_DB_URL=.*#CLIENT_DB_URL=$DBURL?schema=client#" "$APP_ENV"
-
-echo "Updated DB_URL in $APP_ENV"
-
-RECONCILIATION_API_ENV=~/Implentio/reconciliation-engine/projects/api/src/main/resources/application-local.yml
+RECONCILIATION_API_ENV=$BASE_DIR/packages/reconciliation/projects/api/build/resources/main/application-local.yml
 
 if [ ! -f "$RECONCILIATION_API_ENV" ]; then
-    echo "Error: $RECONCILIATION_API_ENV does not exist. Failed to save URL to the file."
+    echo "Warning: $RECONCILIATION_API_ENV does not exist. Skipping."
+else
+    sed -i "s#^    username: .*#    username: $USERNAME#" "$RECONCILIATION_API_ENV"
+    sed -i "s#^    password: .*#    password: $PASSWORD#" "$RECONCILIATION_API_ENV"
+    echo "Updated db credentials in $RECONCILIATION_API_ENV"
 fi
-
-sed -i "s#^    username: .*#    username: $USERNAME#" "$RECONCILIATION_API_ENV"
-sed -i "s#^    password: .*#    password: $PASSWORD#" "$RECONCILIATION_API_ENV"
-
-echo "Updated db credentials in $RECONCILIATION_API_ENV"
 
 # Start tunnel in the background
 pf-tunnel -b "$KUBE_CONTEXT" -r "$SERVICE:$SERVICE_PORT" -l "$LOCAL_PORT" &
