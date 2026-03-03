@@ -33,6 +33,7 @@ alias pip=pip3
 alias v="nvim"
 alias y="yazi"
 alias cc="claude --dangerously-skip-permissions"
+alias oc="opencode"
 
 alias pgstart='~/dotfiles/postgres-external-scripts/pg-toggle.sh start'
 alias pgstop='~/dotfiles/postgres-external-scripts/pg-toggle.sh stop'
@@ -48,13 +49,6 @@ alias dbt-r='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h 
 alias dbt-rw='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h localhost -r Superuser'
 
 export EDITOR='nvim'
-
-# Added for Android development
-export ANDROID_HOME=$HOME/Library/Android/sdk
-export PATH=$PATH:$ANDROID_HOME/emulator
-export PATH=$PATH:$ANDROID_HOME/tools
-export PATH=$PATH:$ANDROID_HOME/tools/bin
-export PATH=$PATH:$ANDROID_HOME/platform-tools
 
 export SOPS_AGE_KEY_FILE=~/Implentio/implentio-local-dev-key.txt
 
