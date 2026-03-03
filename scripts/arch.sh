@@ -17,6 +17,7 @@ sudo pacman -S --needed --noconfirm \
   postgresql \
   typescript-language-server \
   ripgrep \
+  fd \
   direnv \
   fzf \
   github-cli \
