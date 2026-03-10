@@ -69,6 +69,12 @@ else
   echo "==> Claude Code already installed"
 fi
 
+# Claude Code MCP servers
+echo "==> Configuring Claude Code MCP servers..."
+claude mcp add context7 --scope user -- npx -y @upstash/context7-mcp@latest
+# TODO: Add Exa MCP server once API key is set up
+# claude mcp add exa --scope user -e EXA_API_KEY=your-key-here -- npx -y exa-mcp-server@latest
+
 # OpenCode
 if ! command -v opencode &>/dev/null; then
   echo "==> Installing OpenCode..."

@@ -16,12 +16,6 @@
     ],
     "deny": []
   },
-  "statusLine": {
-    "type": "command",
-    "command": "bash ~/.claude/statusline-command.sh"
-  },
-  "alwaysThinkingEnabled": true,
-  "skipDangerousModePermissionPrompt": true,
   "hooks": {
     "Notification": [
       {
@@ -34,5 +28,14 @@
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh"
+  },
+  "alwaysThinkingEnabled": true,
+  "skipDangerousModePermissionPrompt": true,
+  "enabledPlugins": {
+    "typescript-lsp@claude-plugins-official": true
   }
 }
