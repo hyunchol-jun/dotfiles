@@ -16,7 +16,7 @@ M.config = {
   auto_open_nvim = true,
   -- Custom command to run instead of nvim
   nvim_command = 'nvim',
-  -- Vim command to run after nvim starts (e.g., ':!pnpm i')
+  -- Vim command to run after nvim starts (string or list of strings, e.g., ':!pnpm i' or {':!pnpm i', ':LspRestart'})
   nvim_startup_command = nil,
   -- Create a split pane when creating new session
   create_split_pane = false,
@@ -189,11 +189,20 @@ local function setup_window_layout(window_target, path, config)
   if config.auto_open_nvim then
     local target = string.format('%s.0', window_target)
     vim.fn.system({'tmux', 'send-keys', '-t', target, 'C-c', 'C-u'})
-    tmux_send_keys(window_target, 0, config.nvim_command)
+
+    -- Build nvim command with startup commands as -c flags
+    local nvim_cmd = config.nvim_command
     if config.nvim_startup_command then
-      vim.cmd('sleep 1000m')
-      tmux_send_keys(window_target, 0, config.nvim_startup_command)
+      local commands = type(config.nvim_startup_command) == 'table'
+        and config.nvim_startup_command
+        or { config.nvim_startup_command }
+      for _, cmd in ipairs(commands) do
+        local c = cmd:gsub('^:', '')
+        nvim_cmd = nvim_cmd .. ' -c ' .. vim.fn.shellescape(c)
+      end
     end
+
+    tmux_send_keys(window_target, 0, nvim_cmd)
   end
 end
 
