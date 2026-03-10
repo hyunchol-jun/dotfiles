@@ -3,12 +3,22 @@ set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Xcode Command Line Tools
+# KakaoTalk
+if [ ! -d "/Applications/KakaoTalk.app" ]; then
+  echo "==> Installing KakaoTalk from Mac App Store..."
+  mas install 869223134
+else
+  echo "==> KakaoTalk already installed"
+fi
+
+# Xcode (install via MAS if not present, then ensure CLI tools)
+if [ ! -d "/Applications/Xcode.app" ]; then
+  echo "==> Installing Xcode from Mac App Store..."
+  mas install 497799835
+fi
 if ! xcode-select -p &>/dev/null; then
-  echo "==> Installing Xcode Command Line Tools..."
-  xcode-select --install
-  echo "Press any key after Xcode CLI tools installation completes..."
-  read -n 1 -s
+  echo "==> Setting up Xcode Command Line Tools..."
+  sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
 fi
 
 # Homebrew

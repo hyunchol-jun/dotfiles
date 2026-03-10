@@ -34,7 +34,3 @@ cask "docker-desktop"
 cask "hammerspoon"
 cask "tailscale-app"
 cask "font-jetbrains-mono-nerd-font"
-
-# Mac App Store
-mas "KakaoTalk", id: 869223134
-mas "Xcode", id: 497799835
