@@ -69,6 +69,8 @@ BREW_PREFIX=$(brew --prefix 2>/dev/null)
 # fzf shell integration (Ctrl+R, Ctrl+T, Alt+C)
 if [[ -n "$BREW_PREFIX" ]]; then
   eval "$($BREW_PREFIX/bin/fzf --zsh 2>/dev/null)"
+  # Pin fzf to Homebrew version so direnv/nix PATH changes don't cause version conflicts
+  __fzfcmd() { echo "$BREW_PREFIX/bin/fzf" }
 fi
 
 # zsh-autosuggestions (cross-platform)
