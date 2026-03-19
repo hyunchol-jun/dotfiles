@@ -41,6 +41,13 @@ return {
       { '<leader>nd', '<cmd>ObsidianToday<cr>', desc = '[N]otes [D]aily today' },
       { '<leader>nb', '<cmd>ObsidianBacklinks<cr>', desc = '[N]otes [B]acklinks' },
       { '<leader>nt', '<cmd>ObsidianTags<cr>', desc = '[N]otes [T]ags' },
+      { '<leader>nc', '<cmd>ObsidianToggleCheckbox<cr>', desc = '[N]otes [C]heckbox toggle' },
+      { '<leader>nf', '<cmd>ObsidianFollowLink<cr>', desc = '[N]otes [F]ollow link' },
+      { '<leader>nl', '<cmd>ObsidianLink<cr>', mode = 'v', desc = '[N]otes [L]ink selection' },
+      { '<leader>ne', '<cmd>ObsidianExtractNote<cr>', mode = 'v', desc = '[N]otes [E]xtract to note' },
+      { '<leader>ni', '<cmd>ObsidianPasteImg<cr>', desc = '[N]otes [I]mage paste' },
+      { '<leader>np', '<cmd>ObsidianTemplate<cr>', desc = '[N]otes tem[P]late insert' },
+      { '<leader>ny', '<cmd>ObsidianYesterday<cr>', desc = '[N]otes [Y]esterday daily' },
     },
   },
 }

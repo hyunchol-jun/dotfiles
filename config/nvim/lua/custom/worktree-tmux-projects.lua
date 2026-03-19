@@ -32,7 +32,7 @@ return {
     shared_session_name = 'implentio-worktrees',
     auto_open_nvim = true,
     nvim_command = 'nvim',
-    nvim_startup_command = ':!pnpm i && cd packages/implentio-app/ && pnpm i',
+    nvim_startup_command = { ':!pnpm i', ':!cd packages/implentio-app/ && pnpm i' },
     copy_from_main = {
     },
     symlink_from_main = {

@@ -19,6 +19,7 @@ brew "zsh-history-substring-search"
 brew "zoxide"
 brew "mise"
 brew "yazi"
+brew "yq"
 brew "poppler"
 brew "visidata"
 
