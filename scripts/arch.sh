@@ -27,6 +27,7 @@ sudo pacman -S --needed --noconfirm \
   tailscale \
   yazi \
   rclone \
+  visidata \
   ttf-jetbrains-mono-nerd
 
 # Install yay (AUR helper)

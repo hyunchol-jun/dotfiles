@@ -20,6 +20,7 @@ brew "zoxide"
 brew "mise"
 brew "yazi"
 brew "poppler"
+brew "visidata"
 
 # Casks
 cask "ghostty"
