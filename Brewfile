@@ -22,6 +22,7 @@ brew "yazi"
 brew "yq"
 brew "poppler"
 brew "visidata"
+brew "duckdb"
 
 # Casks
 cask "ghostty"
