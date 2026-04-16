@@ -36,7 +36,7 @@ return {
     copy_from_main = {
     },
     symlink_from_main = {
-      '.kube/config.user.yaml',
+      '.kube',
       'packages/implentio-app/packages/toolbelt/public/config/env.js',
       'packages/implentio-app/packages/api-v2/.env',
       'packages/implentio-app/packages/ui/.env',
