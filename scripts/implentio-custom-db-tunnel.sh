@@ -294,6 +294,17 @@ else
     sed -i "s#^CLIENT_DB_URL=.*#CLIENT_DB_URL=$DBURL?schema=client#" "$API_V2_ENV"
     echo "Updated DB_URL in $API_V2_ENV"
 fi
+
+AI_API_ENV=$BASE_DIR/packages/ai-api/.env
+
+if [ ! -f "$AI_API_ENV" ]; then
+    echo "Warning: $AI_API_ENV does not exist. Skipping."
+else
+    sed -i "s#^CDM_DB_URL=.*#CDM_DB_URL=$DBURL?schema=cdm#" "$AI_API_ENV"
+    sed -i "s#^CLIENT_DB_URL=.*#CLIENT_DB_URL=$DBURL?schema=client#" "$AI_API_ENV"
+    echo "Updated DB_URL in $AI_API_ENV"
+fi
+
 RECONCILIATION_API_ENV=$BASE_DIR/packages/reconciliation/projects/api/build/resources/main/application-local.yml
 
 if [ ! -f "$RECONCILIATION_API_ENV" ]; then

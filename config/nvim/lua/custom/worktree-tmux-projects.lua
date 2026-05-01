@@ -40,6 +40,7 @@ return {
       'packages/implentio-app/packages/toolbelt/public/config/env.js',
       'packages/implentio-app/packages/api-v2/.env',
       'packages/implentio-app/packages/ui/.env',
+      'packages/ai-api/.env',
       'packages/reconciliation/projects/api/build/resources/main/application-local.yml',
     },
     custom_layout = {
