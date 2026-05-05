@@ -35,8 +35,9 @@ M.config = {
   shared_session_name = nil,
   -- Kill the shared session when the last window is removed
   auto_kill_empty_session = true,
-  -- Project-specific configurations (loaded from worktree-tmux-projects.lua)
-  projects = require('custom.worktree-tmux-projects'),
+  -- Project-specific configurations (loaded lazily in get_project_config so
+  -- edits to worktree-tmux-projects.lua take effect without restarting nvim).
+  projects = nil,
 }
 
 -- Helper functions
@@ -69,11 +70,14 @@ end
 
 local function get_project_config(path, base_config)
   local project_name = get_project_name(path)
-  local project_config = base_config.projects[project_name] or {}
-  
+  -- Re-read fresh so edits to worktree-tmux-projects.lua apply without restart.
+  package.loaded['custom.worktree-tmux-projects'] = nil
+  local projects = require('custom.worktree-tmux-projects')
+  local project_config = projects[project_name] or {}
+
   -- Merge project config with base config
   local config = vim.tbl_deep_extend('force', base_config, project_config)
-  
+
   return config
 end
 
