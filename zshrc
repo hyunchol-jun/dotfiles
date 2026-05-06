@@ -28,6 +28,7 @@ alias gs="git status"
 alias gdt="git difftool --tool=vimdiff -y"
 alias mv="mv -i"
 alias "gll"="git log --graph --pretty=oneline --abbrev-commit"
+cherry-now() { git cherry-pick "$1" && git commit --amend --no-edit --date=now; }
 alias python=python3
 alias pip=pip3
 alias v="nvim"
