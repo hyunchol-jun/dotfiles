@@ -660,20 +660,25 @@ function M.delete_worktree()
       -- Resolve config before deleting (path won't exist after removal)
       local config = get_project_config(choice.path, M.config)
 
-      -- Delete the worktree
-      local delete_cmd = string.format('git worktree remove %s', vim.fn.shellescape(choice.path))
-      local success, result = tmux_command(delete_cmd)
-      if not success then
-        vim.notify('Failed to delete worktree: ' .. result, vim.log.levels.ERROR)
-        return
-      end
+      -- Delete asynchronously: git recursively removes the worktree's files
+      -- (e.g. node_modules), which can take seconds. A synchronous call would
+      -- freeze the entire editor until it finishes.
+      vim.notify('Deleting worktree: ' .. choice.branch .. ' ...')
+      vim.system({ 'git', 'worktree', 'remove', choice.path }, { text = true }, function(obj)
+        vim.schedule(function()
+          if obj.code ~= 0 then
+            vim.notify('Failed to delete worktree: ' .. vim.trim(obj.stderr or ''), vim.log.levels.ERROR)
+            return
+          end
 
-      vim.notify('Deleted worktree: ' .. choice.branch)
+          vim.notify('Deleted worktree: ' .. choice.branch)
 
-      -- Kill tmux target if configured
-      if config.auto_kill_session then
-        kill_tmux_target(choice.branch, choice.path, config)
-      end
+          -- Kill tmux target if configured
+          if config.auto_kill_session then
+            kill_tmux_target(choice.branch, choice.path, config)
+          end
+        end)
+      end)
     end)
   end)
 end
@@ -807,30 +812,34 @@ function M.merge_worktree()
 
         vim.notify(string.format('Merged %s into %s (%s)', choice.branch, cfg_target, strategy))
 
-        -- Cleanup: remove worktree
-        local rm_cmd = string.format('git worktree remove %s', vim.fn.shellescape(choice.path))
-        ok, out = tmux_command(rm_cmd)
-        if not ok then
-          vim.notify('Failed to remove worktree: ' .. out, vim.log.levels.ERROR)
-          return
-        end
-        vim.notify('Removed worktree: ' .. choice.path)
+        -- Cleanup: remove worktree asynchronously. git recursively removes the
+        -- worktree's files (e.g. node_modules), which can take seconds; a
+        -- synchronous call would freeze the entire editor until it finishes.
+        vim.notify('Removing worktree: ' .. choice.path .. ' ...')
+        vim.system({ 'git', 'worktree', 'remove', choice.path }, { text = true }, function(obj)
+          vim.schedule(function()
+            if obj.code ~= 0 then
+              vim.notify('Failed to remove worktree: ' .. vim.trim(obj.stderr or ''), vim.log.levels.ERROR)
+              return
+            end
+            vim.notify('Removed worktree: ' .. choice.path)
 
-        -- Cleanup: delete branch
-        if config.auto_delete_branch then
-          local del_cmd = string.format('git branch -d %s', vim.fn.shellescape(choice.branch))
-          ok, out = tmux_command(del_cmd)
-          if not ok then
-            vim.notify('Failed to delete branch (not fully merged?): ' .. out, vim.log.levels.WARN)
-          else
-            vim.notify('Deleted branch: ' .. choice.branch)
-          end
-        end
+            -- Cleanup: delete branch
+            if config.auto_delete_branch then
+              local bok, bout = tmux_command(string.format('git branch -d %s', vim.fn.shellescape(choice.branch)))
+              if not bok then
+                vim.notify('Failed to delete branch (not fully merged?): ' .. bout, vim.log.levels.WARN)
+              else
+                vim.notify('Deleted branch: ' .. choice.branch)
+              end
+            end
 
-        -- Cleanup: kill tmux target
-        if config.auto_kill_session then
-          kill_tmux_target(choice.branch, choice.path, config)
-        end
+            -- Cleanup: kill tmux target
+            if config.auto_kill_session then
+              kill_tmux_target(choice.branch, choice.path, config)
+            end
+          end)
+        end)
       end)
     end)
   end)
