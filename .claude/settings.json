@@ -37,6 +37,15 @@
             "command": "node \"/Users/hyuncholjun/.claude/hooks/gsd-check-update.js\""
           }
         ]
+      },
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "case \"$CLAUDE_PROJECT_DIR\" in *Implentio/stack*) cat \"$HOME/dotfiles/.claude/stack-memory.md\" 2>/dev/null || true ;; esac"
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -77,6 +86,8 @@
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
   "skipDangerousModePermissionPrompt": true,
-  "skipAutoPermissionPrompt": true,
-  "preferredNotifChannel": "terminal_bell"
+  "theme": "dark",
+  "preferredNotifChannel": "terminal_bell",
+  "autoCompactEnabled": false,
+  "skipAutoPermissionPrompt": true
 }
