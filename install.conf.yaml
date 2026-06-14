@@ -11,6 +11,7 @@
     ~/.zshrc: zshrc
     ~/.claude/commands: .claude/commands
     ~/.claude/skills: .claude/skills
+    ~/.claude/workflows: .claude/workflows
     ~/.claude/settings.json: .claude/settings.json
     ~/.claude/statusline-command.sh: .claude/statusline-command.sh
     ~/.claude/CLAUDE.md: .claude/CLAUDE.md
