@@ -89,5 +89,6 @@
   "theme": "dark",
   "preferredNotifChannel": "terminal_bell",
   "autoCompactEnabled": false,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "agentPushNotifEnabled": true
 }
