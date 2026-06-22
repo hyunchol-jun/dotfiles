@@ -59,6 +59,8 @@ Ask: "What should the public interface look like? Which behaviors are most impor
 
 **You can't test everything.** Confirm with the user exactly which behaviors matter most. Focus testing effort on critical paths and complex logic, not every possible edge case.
 
+**Autonomous mode.** When the caller signals autonomous/AFK mode (e.g. `/tdd-review-loop --afk` driving this skill, or any caller that passes an explicit acceptance-criteria checklist + plan), do **not** stop at the Planning checklist's "Confirm with user" / "Get user approval" / `Ask:` steps. Instead **derive** the public interface and the behaviors-to-test from the provided acceptance criteria + plan doc + the repo's existing conventions, and **announce-and-proceed**: state in one line the interface and the behavior list you chose, then start the tracer bullet — the caller will override if it disagrees. The only thing that still halts is a genuinely **undetermined** interface (two materially different public surfaces both satisfy the criteria) or a **sensitive** surface (auth, payments, billing, migrations, deletion/PII) — in those cases surface the ambiguity and stop rather than guessing. Everything else in this skill (the red-green-refactor loop, one-test-at-a-time, never-refactor-while-red) is unchanged.
+
 ### 2. Tracer Bullet
 
 Write ONE test that confirms ONE thing about the system:
