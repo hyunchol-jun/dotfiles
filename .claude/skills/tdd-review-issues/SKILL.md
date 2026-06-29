@@ -156,46 +156,59 @@ drop, then reconcile with the existing ledger (Resumability, below).
 
 Present the ordered execution list as a numbered plan. For each issue show: its `NN`/title, **Type**
 (HITL/AFK), **blockers**, and its current ledger state (pending / done / skipped / paused). State the **single
-stacked branch name** you'll use: `tdd-review-issues/<short-slug>` (slug from the issue set or the
-parent plan). **Announce the plan and proceed** — give the order, the HITL/AFK classification per
-issue, and the branch name in one pass, then start; you don't need my approval to begin. Stop for me
-**only** when something is structurally ambiguous: a dependency cycle, an issue whose `**Type**` is
-missing or is neither `HITL` nor `AFK`, a dangling blocker (the DAG section above), or a slug you
-genuinely can't derive. I'll override the announced plan if I disagree.
+stacked branch** you'll build on: the branch you're **currently on** (`git branch --show-current`) —
+this skill stacks all the work in place and does **not** cut a new branch. **Announce the plan and
+proceed** — give the order, the HITL/AFK classification per issue, and the branch name in one pass,
+then start; you don't need my approval to begin. Stop for me **only** when something is structurally
+ambiguous: a dependency cycle, an issue whose `**Type**` is missing or is neither `HITL` nor `AFK`, a
+dangling blocker (the DAG section above), or a current branch that can't be stacked on — a detached
+HEAD, or the default/protected branch (the branch-setup section handles both). I'll override the
+announced plan if I disagree.
 
 ---
 
-## Set up the single stacked branch (once)
+## Stack all work on the current branch (once)
 
-All issues stack on **one** branch — each issue builds on the commits of the ones before it. Do
-these steps **in this exact order** — branch first, then commit the issue files onto it, then record
-the base. (Committing before the branch exists would land the commit on the default/protected branch;
-recording the base before the issue-files commit would make the first AFK issue's `HEAD == $BASE`
-assertion spuriously fail, since HEAD then sits one commit *above* the recorded base.)
+All issues stack on **one** branch — the branch you are **already on** when the batch starts. This
+skill does **not** cut a new branch; it builds the whole stack **in place** on the current branch,
+each issue on top of the commits of the ones before it. Do these steps **in this exact order** —
+validate the branch first, then commit the issue files onto it, then record the base. (Recording the
+base before the issue-files commit would make the first AFK issue's `HEAD == $BASE` assertion
+spuriously fail, since HEAD then sits one commit *above* the recorded base.)
 
-1. **Create and check out the stacked branch** `tdd-review-issues/<slug>` off the current default
-   branch (`main`/`master` — resolve its name with `git symbolic-ref --short refs/remotes/origin/HEAD`,
-   falling back to whichever of `main`/`master` exists, and reuse that resolved name for the
-   `<default-branch>`/`<default>` placeholders below). If it already exists from a prior run, **resume on it** (don't recreate) — its commits are
-   the prior issues' work — and **skip steps 2–3** (the issue-files commit and base capture already
-   happened on the original run). Persist the branch name to `$WTMP-branch`. On a resume where the
-   branch already exists and `$WTMP-base` is present, **trust `$WTMP-base`** for the stack base. If it's
-   somehow missing, recover it as the **first commit on the branch** —
-   `git rev-list --max-parents=1 <default-branch>..tdd-review-issues/<slug> | tail -1` (the
-   issue-files commit, i.e. the child of the fork point, *not* the fork point itself) — and rewrite
-   `$WTMP-base`. (Skipping steps 2–3 on resume also skips the orchestrator's own up-front dirty-tree
-   check — that is intentional, not an oversight: each spawned `/tdd-review-loop` run still runs its
-   own dirty-tree gate, so stray out-of-set changes are still caught before any issue's diff is
-   computed.)
+1. **Resolve and validate the current branch.** Run `git branch --show-current`, and resolve the
+   default branch's name (`main`/`master` — `git symbolic-ref --short refs/remotes/origin/HEAD`,
+   falling back to whichever of `main`/`master` exists; reuse it for the `<default>` placeholder
+   below).
+   - **Empty result (detached HEAD)** → stop and tell me; there's no branch to stack on.
+   - **It *is* the default/protected branch** → **stop and tell me to switch to (or create) a working
+     branch first.** Stacking TDD red-green churn and review commits directly onto the default branch
+     is almost never intended, and the per-issue `/tdd-review-loop` subagent would refuse it anyway
+     (its protected-branch gate auto-branches off `main`/`master`, which would break the single
+     stack). This is a pre-loop halt — write **no** ledger row (no issue is running yet).
+   - **Otherwise** → this is the stack branch (call it `<branch>`). Persist its name to `$WTMP-branch`
+     and reuse it everywhere below.
 
-2. **Dirty-tree check + commit the issue files (fresh-branch case).** Run `git status --porcelain`.
+   **On a resume** (a `$WTMP-progress.md` ledger and `$WTMP-branch` already exist): confirm
+   `git branch --show-current` still equals the persisted `$WTMP-branch`. If it differs — I switched
+   branches since the original run — **stop and tell me**, naming both branches, rather than silently
+   stacking onto a different branch. If it matches, **skip steps 2–3** (the issue-files commit and
+   base capture already happened on the original run) and **trust `$WTMP-base`** for the stack base;
+   if `$WTMP-base` is somehow missing, recover it as the **issue-files commit** — the first commit on
+   the branch past the fork point — `git rev-list --max-parents=1 <default>..<branch> | tail -1` (the
+   child of the fork point, *not* the fork point itself) — and rewrite `$WTMP-base`. (Skipping steps
+   2–3 on resume also skips the orchestrator's own up-front dirty-tree check — that is intentional,
+   not an oversight: each spawned `/tdd-review-loop` run still runs its own dirty-tree gate, so stray
+   out-of-set changes are still caught before any issue's diff is computed.)
+
+2. **Dirty-tree check + commit the issue files (fresh-run case).** Run `git status --porcelain`.
    The issue files (and any plan docs they reference under `## Parent`) are commonly **untracked** —
    and an untracked tree would trip the `/tdd-review-loop` subagent's own dirty-tree gate on **every**
    issue. Resolve it **once, now, autonomously**: **commit the issue files (and referenced plan docs)
-   as the first commit on the stacked branch** (you are already on it from step 1) so the tree is
-   clean for every subsequent run, and announce that you did so. (This is the only handling — the old
-   "record as excluded paths" alternative is dropped: it left a stale path list whenever a HITL issue
-   edited a downstream issue file mid-run.)
+   as the first batch commit on `<branch>`** (you are already on it) so the tree is clean for every
+   subsequent run, and announce that you did so. (This is the only handling — the old "record as
+   excluded paths" alternative is dropped: it left a stale path list whenever a HITL issue edited a
+   downstream issue file mid-run.)
 
    If the tree has *other* changes **beyond** the issue/plan files, do **not** silently absorb them
    — they aren't yours to commit. Surface them and pause: tell me what they are and ask whether to
@@ -204,17 +217,21 @@ assertion spuriously fail, since HEAD then sits one commit *above* the recorded 
 
 3. **Record the base sha — *after* the step-2 commit.** Persist `$WTMP-base` = `git rev-parse HEAD`
    **once the issue-files commit exists** (if the tree was already clean and nothing was committed,
-   HEAD is just the branch's start point — that's fine). This sha is **the point the stack starts
+   HEAD is just the current branch tip — that's fine). This sha is **the point the stack starts
    from** and is exactly what the first AFK issue asserts its `HEAD` against, so it **must** include
    the issue-files commit. Persist it so it survives a context drop.
 
-**Why per-run branching is suppressed:** when `/tdd-review-loop` reaches its own "branch off the
-default/protected branch" pre-flight step, the current branch is the `tdd-review-issues/<slug>`
-feature branch **this same agent just created this session** — which its gate explicitly allows it to
-implement on **without** cutting a new `tdd-review-loop/<slug>` branch. That is what keeps everything
-on one stack. Each `/tdd-review-loop` run then captures its own `$BASE = git rev-parse HEAD` at the
-*current* (already-advanced) HEAD, so its diff scopes to **that issue only**, on top of the prior
-issues' commits.
+**Why per-run branching stays suppressed:** when a `/tdd-review-loop` subagent reaches its own "branch
+off the default/protected branch" pre-flight step, it must implement on `<branch>` **in place**,
+without cutting a new `tdd-review-loop/<slug>` branch — that is what keeps everything on one stack.
+The loop classifies `tdd-review-loop/*` and `tdd-review-issues/*` branch names as caller-created
+automatically, but **your stack branch may be named anything**, so you must **tell the subagent in its
+spawn prompt** that `<branch>` is the feature branch the caller created for this stacked work and that
+it must implement in place and **not** branch (see the main loop, step 4c). Because you already
+guaranteed in step 1 that `<branch>` is *not* the default branch, the loop's "on `main`/`master` →
+auto-branch" path never fires. Each `/tdd-review-loop` run then captures its own
+`$BASE = git rev-parse HEAD` at the *current* (already-advanced) HEAD, so its diff scopes to **that
+issue only**, on top of the prior issues' commits.
 
 ---
 
@@ -287,6 +304,15 @@ For each issue in order:
      spawn it at exactly that HEAD. You pass it (and the branch name) only so the subagent can sanity-
      check where it is; the loop does not consume an externally-supplied base. *Your* use of `$BASE` is
      the HEAD assertion and rewind in (b), not the subagent's input.
+   - **Explicitly instruct the subagent to implement on `<branch>` in place and NOT cut a new branch.**
+     Because `<branch>` is the branch you happened to start on, its name may be anything — it likely is
+     *not* a `tdd-review-loop/*` or `tdd-review-issues/*` name that the loop's protected-branch gate
+     would auto-classify as caller-created. So state it plainly in the prompt: "You are on `<branch>`,
+     the feature branch I (the caller) created for this stacked work — implement on it in place; do
+     **not** branch off it or cut a new `tdd-review-loop/*` branch." This is what satisfies the loop's
+     pre-flight gate so it works on one stack instead of emitting `BLOCKED:{protected_branch}`. (Step 1
+     of branch-setup already guaranteed `<branch>` is not the default branch, so the loop's
+     auto-branch-off-`main` path won't trigger either.)
 
    The subagent runs the loop's full Phase 0–3 **inside its own context** and **returns only a compact
    result** — that is what keeps your context light:
@@ -358,8 +384,9 @@ When the loop finishes (all DONE, or paused/stopped at my direction), summarize 
 - **Per-issue status** — DONE / HITL-resolved / SKIPPED / PAUSED, each with its outcome — for an AFK
   issue the `ac_outcome` from its subagent result; for a HITL-resolved or SKIPPED issue the resolution
   note (those have no subagent and so no `ac_outcome`) — and anything left contested or deferred.
-- **The stacked branch** name and its commit range (`git log <default>..tdd-review-issues/<slug>
-  --oneline`).
+- **The stacked branch** name (`<branch>`, the branch the batch ran on) and the batch's commit range
+  on top of the recorded base — `git log <base>..<branch> --oneline`, where `<base>` is `$WTMP-base`
+  (the issue-files commit sits at `<base>` itself; everything after it is the per-issue work).
 - **All Phase-3 self-test-guide paths** so I can verify each slice by hand.
 - A reminder that — inheriting `/tdd-review-loop`'s policy — **nothing was pushed or opened as a PR**
   unless I explicitly asked.
