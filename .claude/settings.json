@@ -85,11 +85,12 @@
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
+  "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "theme": "dark",
   "preferredNotifChannel": "terminal_bell",
   "autoCompactEnabled": false,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "tui": "fullscreen"
+  "model": "claude-fable-5[1m]"
 }
