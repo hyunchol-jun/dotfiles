@@ -6,7 +6,7 @@ Read this only when the round-1 mode decision in `SKILL.md` chose the panel. Eve
 
 **First capture the Phase-1-handoff HEAD:** `$PRE_SNAPSHOT = git rev-parse HEAD`, persisted to `$TMP-pre-snapshot.sha`, **before spawning any panelist** — teardown asserts HEAD against it to catch a rogue panelist commit. (`$BASE` won't do: HEAD ≠ `$BASE` after `/tdd`'s commits. The panel makes no commit, but the assert still needs a reference.)
 
-Spawn 3–4 `general-purpose` reviewers in parallel (single message, multiple tool calls). **Default to all 4 lenses.** Drop to 3 — folding edge-cases into correctness — only when the diff is panel-worthy purely on the high-risk disjunct, OR is just over a single size threshold: <5 files AND <250 changed lines AND no concurrency/async/ordering/partial-failure surface. Real concurrency surface keeps its dedicated lens regardless of size.
+Spawn 3–4 `general-purpose` reviewers in parallel (single message, multiple tool calls). **Default to all 4 lenses.** Drop to 3 — folding edge-cases into correctness — only when the diff is panel-worthy purely on the high-risk disjunct, OR is just over a single size threshold: <8 files AND <600 changed lines AND no concurrency/async/ordering/partial-failure surface. Real concurrency surface keeps its dedicated lens regardless of size.
 
 Each panelist gets the same round-1 reviewer context (requirement, `$AC`, `$BASE` + exclusion list, implementation summary, frontend scoping rule) with three changes:
 
