@@ -312,6 +312,16 @@ For each issue in order:
    Optionally tick the
    issue file's `## Acceptance criteria` checkboxes if I asked for it.
 
+   **Also preserve the loop's timing journal** (AFK issues only): the subagent's phase-timing journal
+   lives at the loop's own prefix (`/tmp/tdd-review-loop-<hash>-journal.md` — same shasum-of-`$TOP`
+   recipe as `$WTMP`, different prefix) and the **next** loop run's pre-flight deletes it. Copy it the
+   moment the subagent returns, in one command (recompute both prefixes inline):
+   ```bash
+   TOP=$(git rev-parse --show-toplevel) && H=$(printf %s "$TOP" | shasum | cut -c1-12) && cp "/tmp/tdd-review-loop-$H-journal.md" "/tmp/tdd-review-issues-$H-journal-<NN>.md"
+   ```
+   (`<NN>` = the issue's number; a missing source file just means that run produced no journal — note it
+   and move on.) This is what makes a slow batch auditable after the fact.
+
 6. **Collect the self-test guide.** Each subagent returns the **path** to its disposable Phase-3
    self-test guide in its result (it does **not** print the guide back to you). Record each path —
    you'll list them all at the end. Don't `git add` or commit these (they're disposable, per
@@ -342,6 +352,8 @@ When the loop finishes (all DONE, or paused/stopped at my direction), summarize 
   on top of the recorded base — `git log <base>..<branch> --oneline`, where `<base>` is `$WTMP-base`
   (the issue-files commit sits at `<base>` itself; everything after it is the per-issue work).
 - **All Phase-3 self-test-guide paths** so I can verify each slice by hand.
+- **The per-issue journal copies** (`$WTMP-journal-<NN>.md`) — phase-by-phase timing per issue, if I
+  want to see where the minutes went.
 - A reminder that — inheriting `/tdd-review-loop`'s policy — **nothing was pushed or opened as a PR**
   unless I explicitly asked.
 
