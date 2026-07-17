@@ -9,6 +9,7 @@
     ~/.dotfiles: ""
     ~/.tmux.conf: tmux.conf
     ~/.zshrc: zshrc
+    ~/.agents: .agents
     ~/.claude/commands: .claude/commands
     ~/.claude/skills: .claude/skills
     ~/.claude/workflows: .claude/workflows
