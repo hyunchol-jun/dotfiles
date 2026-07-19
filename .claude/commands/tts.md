@@ -16,3 +16,15 @@ Do exactly one of the following based on the argument:
 - **empty / anything else**: check which flag files exist for `$CLAUDE_CODE_SESSION_ID` (also check `~/.claude/tts-on` for the global always-on flag) and report the current state plus the available subcommands (on, off, once).
 
 Keep the confirmation to one short sentence. Do not modify any other files.
+
+## Speech-friendly responses
+
+After **on**, write every final response speech-friendly for the rest of the
+session; after **once**, only the next one; after **off**, write normally.
+
+The Stop hook speaks the final response with code blocks, markdown, and URLs
+stripped. So keep the prose self-sufficient — everything the listener needs
+in plain, short, spoken-style sentences, leading with the outcome. Refer to
+things pronounceably ("the tts-notify script", not a full path). Code blocks
+and tables are still fine for the terminal reader; just don't let them carry
+the message.
