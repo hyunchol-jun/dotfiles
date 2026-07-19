@@ -1,10 +1,14 @@
 #!/bin/bash
-# Claude Code Stop hook: speak the last assistant reply with macOS TTS and
-# send it to Telegram as a voice message.
+# Claude Code Stop hook: speak the last assistant reply (OpenAI TTS, falling
+# back to macOS `say`) and send it to Telegram as a voice message.
 #
 # Requires ~/.claude/telegram-tts.env (not in the dotfiles repo) with:
 #   TELEGRAM_BOT_TOKEN=123456:ABC...
 #   TELEGRAM_CHAT_ID=123456789
+#   OPENAI_API_KEY=sk-...    # optional; without it notes use macOS say
+#   TTS_VOICE=coral          # optional OpenAI voice, default coral
+#   TTS_INSTRUCTIONS=...     # optional speaking-style prompt for OpenAI TTS
+#   TTS_SPEED=1.15           # optional playback speed (both engines), default 1.0
 #
 # Voice notes are OFF by default. Enable selectively:
 #   /tts on|off|once   - per-session toggle (writes ~/.claude/.tts-sessions/)
@@ -12,7 +16,7 @@
 
 set -u
 
-CONFIG="$HOME/.claude/telegram-tts.env"
+CONFIG="${TTS_CONFIG:-$HOME/.claude/telegram-tts.env}"
 FLAG_DIR="$HOME/.claude/.tts-sessions"
 GLOBAL_ON="$HOME/.claude/tts-on"
 LOG="$HOME/.claude/tts-notify.log"
@@ -58,32 +62,80 @@ CLEAN=$(printf '%s\n' "$TEXT" \
   | sed -E 's/`([^`]*)`/\1/g; s/\*\*//g; s/__//g; s/^#+[[:space:]]*//; s~https?://[^[:space:])]+~ link ~g' \
   | tr -s '[:space:]' ' ')
 
-if [ ${#CLEAN} -gt 1500 ]; then
-  CLEAN="${CLEAN:0:1500}. Message truncated."
+# 4000 chars ~= 4.5 min of speech; also inside OpenAI TTS's 4096-char input
+# limit. (The model also has a 2000-token cap — fine for English, but dense
+# CJK text can exceed it; the say fallback covers that case.)
+if [ ${#CLEAN} -gt 4000 ]; then
+  CLEAN="${CLEAN:0:4000}. Message truncated."
 fi
 [ ${#CLEAN} -ge 10 ] || { log "skip: text too short after cleaning (${#CLEAN} chars)"; exit 0; }
 
 WORK_DIR=$(mktemp -d)
 trap 'rm -rf "$WORK_DIR"' EXIT
 
-VOICE="Ava (Premium)"
-say -v '?' | grep -q '^Ava (Premium)' || VOICE="Samantha"
+TTS_VOICE="${TTS_VOICE:-coral}"
+TTS_INSTRUCTIONS="${TTS_INSTRUCTIONS:-Calm, conversational tone. Read naturally.}"
+ENGINE=""
 
-printf '%s' "$CLEAN" > "$WORK_DIR/text.txt"
-say -v "$VOICE" -o "$WORK_DIR/reply.aiff" -f "$WORK_DIR/text.txt" \
-  || { log "error: say failed (voice: $VOICE)"; exit 0; }
+# Both say and OpenAI output land well below typical voice-note loudness
+# (~-14 LUFS), so normalize during the opus encode on both paths. atempo
+# handles playback speed there too — gpt-4o-mini-tts ignores the API's
+# `speed` param, and this works identically for both engines.
+TTS_SPEED="${TTS_SPEED:-1.0}"
+AFILTER="loudnorm=I=-14:TP=-1.5:LRA=11,atempo=$TTS_SPEED"
 
-# Telegram voice messages must be OGG/Opus
-ffmpeg -loglevel error -y -i "$WORK_DIR/reply.aiff" \
-  -c:a libopus -b:a 32k -ar 48000 "$WORK_DIR/reply.ogg" \
-  || { log "error: ffmpeg conversion failed"; exit 0; }
+# OpenAI gpt-4o-mini-tts, opus output. Any failure (no key, network, quota,
+# token limit) returns non-zero so the say fallback kicks in.
+synth_openai() {
+  [ -n "${OPENAI_API_KEY:-}" ] || return 1
+  local payload http_code
+  payload=$(jq -n --arg input "$CLEAN" --arg voice "$TTS_VOICE" --arg instructions "$TTS_INSTRUCTIONS" '{
+    model: "gpt-4o-mini-tts",
+    voice: $voice,
+    input: $input,
+    instructions: $instructions,
+    response_format: "opus"
+  }')
+  http_code=$(curl -s --max-time 30 -o "$WORK_DIR/reply-raw.opus" -w '%{http_code}' \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -H 'Content-Type: application/json' \
+    -d "$payload" \
+    "https://api.openai.com/v1/audio/speech") \
+    || { log "openai: curl failed (network/timeout), falling back to say"; return 1; }
+  if [ "$http_code" != 200 ]; then
+    # On error the body is JSON, not audio — log it (token-limit errors show
+    # up here) and discard so it can't be shipped to Telegram.
+    log "openai: HTTP $http_code, falling back to say: $(tr -d '\n' < "$WORK_DIR/reply-raw.opus" | head -c 200)"
+    return 1
+  fi
+  ffmpeg -loglevel error -y -i "$WORK_DIR/reply-raw.opus" \
+    -af "$AFILTER" -c:a libopus -b:a 32k -ar 48000 "$WORK_DIR/reply.ogg" \
+    || { log "openai: ffmpeg normalize failed, falling back to say"; return 1; }
+  [ -s "$WORK_DIR/reply.ogg" ] || { log "openai: empty audio, falling back to say"; return 1; }
+  ENGINE="openai/$TTS_VOICE"
+}
+
+# macOS say + ffmpeg re-mux (Telegram voice messages must be OGG/Opus)
+synth_say() {
+  local voice="Ava (Premium)"
+  say -v '?' | grep -q '^Ava (Premium)' || voice="Samantha"
+  printf '%s' "$CLEAN" > "$WORK_DIR/text.txt"
+  say -v "$voice" -o "$WORK_DIR/reply.aiff" -f "$WORK_DIR/text.txt" \
+    || { log "error: say failed (voice: $voice)"; return 1; }
+  ffmpeg -loglevel error -y -i "$WORK_DIR/reply.aiff" \
+    -af "$AFILTER" -c:a libopus -b:a 32k -ar 48000 "$WORK_DIR/reply.ogg" \
+    || { log "error: ffmpeg conversion failed"; return 1; }
+  ENGINE="say/$voice"
+}
+
+synth_openai || synth_say || exit 0
 
 RESP=$(curl -s --max-time 60 \
   -F chat_id="$TELEGRAM_CHAT_ID" \
   -F voice=@"$WORK_DIR/reply.ogg" \
   "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendVoice")
 if printf '%s' "$RESP" | jq -e '.ok' >/dev/null 2>&1; then
-  log "sent: ${#CLEAN} chars, voice $VOICE :: $(printf '%s' "$CLEAN" | head -c 60)"
+  log "sent: ${#CLEAN} chars via $ENGINE :: $(printf '%s' "$CLEAN" | head -c 60)"
 else
   log "error: sendVoice failed: $(printf '%s' "$RESP" | head -c 300)"
 fi
