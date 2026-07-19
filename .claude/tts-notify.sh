@@ -6,12 +6,15 @@
 #   TELEGRAM_BOT_TOKEN=123456:ABC...
 #   TELEGRAM_CHAT_ID=123456789
 #
-# Disable without editing settings: touch ~/.claude/tts-off
+# Voice notes are OFF by default. Enable selectively:
+#   /tts on|off|once   - per-session toggle (writes ~/.claude/.tts-sessions/)
+#   touch ~/.claude/tts-on - always on, all sessions
 
 set -u
 
 CONFIG="$HOME/.claude/telegram-tts.env"
-OFF_SWITCH="$HOME/.claude/tts-off"
+FLAG_DIR="$HOME/.claude/.tts-sessions"
+GLOBAL_ON="$HOME/.claude/tts-on"
 LOG="$HOME/.claude/tts-notify.log"
 
 log() { printf '%s %s\n' "$(date '+%F %T')" "$*" >> "$LOG"; }
@@ -24,13 +27,25 @@ if [ "${1:-}" != "--worker" ]; then
   exit 0
 fi
 
-[ -f "$OFF_SWITCH" ] && { log "skip: tts-off switch present"; exit 0; }
+INPUT=$(cat)
+SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // empty')
+
+# Opt-in check: send only if this session (or everything) is enabled.
+# Exit silently otherwise — this fires on every response in every session.
+find "$FLAG_DIR" -type f -mtime +7 -delete 2>/dev/null
+ENABLED=0
+[ -f "$GLOBAL_ON" ] && ENABLED=1
+[ -n "$SESSION_ID" ] && [ -f "$FLAG_DIR/$SESSION_ID" ] && ENABLED=1
+if [ -n "$SESSION_ID" ] && [ -f "$FLAG_DIR/$SESSION_ID.once" ]; then
+  ENABLED=1
+  rm -f "$FLAG_DIR/$SESSION_ID.once"
+fi
+[ "$ENABLED" = 1 ] || exit 0
+
 [ -f "$CONFIG" ] || { log "skip: no config file"; exit 0; }
 # shellcheck source=/dev/null
 source "$CONFIG"
 [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ] || { log "skip: config missing token or chat id"; exit 0; }
-
-INPUT=$(cat)
 
 # The Stop hook input carries the final response text directly — no need to
 # read the transcript file (whose text entries can flush minutes late).
