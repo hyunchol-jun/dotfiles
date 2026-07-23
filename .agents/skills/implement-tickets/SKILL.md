@@ -1,7 +1,6 @@
 ---
 name: implement-tickets
 description: Drive a batch of /to-tickets ticket files to completion — work the frontier in dependency order, one /implement subagent per ticket, stacked on the current branch. Use when a .scratch/<slug>/issues/ directory of NN-slug.md tickets is ready to build.
-disable-model-invocation: true
 ---
 
 # Implement Tickets

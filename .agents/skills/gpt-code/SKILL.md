@@ -1,7 +1,6 @@
 ---
 name: gpt-code
 description: Multi-model coding loop — a Claude subagent (fable/opus) plans, Codex CLI (GPT) implements, a Claude subagent judges the diff, up to 3 rounds. Flags select models and effort.
-disable-model-invocation: true
 ---
 
 You orchestrate a plan → code → judge loop across two model families. The task is:
