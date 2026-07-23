@@ -34,6 +34,7 @@ alias pip=pip3
 alias v="nvim"
 alias y="yazi"
 alias cc="claude --dangerously-skip-permissions"
+alias cx="codex --yolo"
 alias oc="opencode"
 
 alias pgstart='~/dotfiles/postgres-external-scripts/pg-toggle.sh start'

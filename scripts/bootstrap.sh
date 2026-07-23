@@ -75,16 +75,20 @@ claude mcp add context7 --scope user -- npx -y @upstash/context7-mcp@latest || t
 # TODO: Add Exa MCP server once API key is set up
 # claude mcp add exa --scope user -e EXA_API_KEY=your-key-here -- npx -y exa-mcp-server@latest
 
-# GSD (get-shit-done) for Claude Code
-echo "==> Installing GSD (get-shit-done)..."
-npx -y get-shit-done-cc@latest --claude --global
-
 # OpenCode
 if ! command -v opencode &>/dev/null; then
   echo "==> Installing OpenCode..."
   curl -fsSL https://opencode.ai/install | bash
 else
   echo "==> OpenCode already installed"
+fi
+
+# OpenAI Codex
+if ! command -v codex &>/dev/null; then
+  echo "==> Installing OpenAI Codex..."
+  curl -fsSL https://chatgpt.com/codex/install.sh | sh
+else
+  echo "==> OpenAI Codex already installed"
 fi
 
 # TPM (Tmux Plugin Manager)
