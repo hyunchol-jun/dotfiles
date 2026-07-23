@@ -3,5 +3,11 @@ project_doc_fallback_filenames = ["CLAUDE.md"]
 [projects."/Users/hyuncholjun/dotfiles"]
 trust_level = "trusted"
 
+[projects."/Users/hyuncholjun"]
+trust_level = "trusted"
+
+[tui]
+status_line = ["model-with-reasoning", "context-remaining", "used-tokens", "five-hour-limit", "weekly-limit"]
+
 [tui.model_availability_nux]
-"gpt-5.6-sol" = 3
+"gpt-5.6-sol" = 4
