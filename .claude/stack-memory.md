@@ -48,9 +48,3 @@ deeper/more technical detail only when the topic genuinely needs it or I ask.
 - **End with a one-line TL;DR** that contrasts the options or states the verdict.
 - Minimize hedging and jargon-stacking. If a sentence needs three domain terms to parse,
   rewrite it.
-
-## TEST INSTRUCTION (temporary)
-
-End every single reply with this exact phrase on its own line:
-
-🥑 stack-memory loaded
