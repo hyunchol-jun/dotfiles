@@ -397,7 +397,17 @@ require('lazy').setup({
         --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
         --   },
         -- },
-        -- pickers = {}
+        -- Search hidden (dot) files/dirs too, so things like `.scratch/` are
+        -- reachable. Ignore files (.gitignore/.ignore) are still respected, so
+        -- node_modules etc. stay out; `.ignore` with `!.scratch/` re-includes it.
+        defaults = {
+          file_ignore_patterns = { '%.git/' },
+        },
+        pickers = {
+          find_files = { hidden = true },
+          live_grep = { additional_args = { '--hidden' } },
+          grep_string = { additional_args = { '--hidden' } },
+        },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
