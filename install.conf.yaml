@@ -18,6 +18,7 @@
     ~/.claude/CLAUDE.md: .claude/CLAUDE.md
     ~/.claude/ntfy-notify.sh: .claude/ntfy-notify.sh
     ~/.claude/tts-notify.sh: .claude/tts-notify.sh
+    ~/.claude/.i-have-adhd-always: .claude/.i-have-adhd-always
     ~/.codex/config.toml: .codex/config.toml
 
 - shell:
