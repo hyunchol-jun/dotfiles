@@ -101,3 +101,12 @@ fi
 
 # opencode
 export PATH=/Users/hyuncholjun/.opencode/bin:$PATH
+
+# OpenRouter key for the walkthrough-video TTS skill.
+# Read from the git-ignored stack .env rather than hardcoded — this repo is pushed to GitHub.
+__or_env="$HOME/Implentio/stack/main/packages/implentio-app/packages/api-v2/.env"
+if [[ -f "$__or_env" ]]; then
+  __or_line=$(grep -m1 '^OPENROUTER_API_KEY=' "$__or_env" 2>/dev/null)
+  [[ -n "$__or_line" ]] && export "$__or_line"
+fi
+unset __or_env __or_line
