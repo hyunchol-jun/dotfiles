@@ -50,6 +50,25 @@ alias dbumount='umount ~/Dropbox && kill $(lsof -ti :2049) 2>/dev/null'
 alias dbt-r='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h localhost -r Reader'
 alias dbt-rw='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h localhost -r Superuser'
 
+# attach to mini1's tmux over LAN (falls back to tailscale IP if LAN fails)
+alias mini1='ssh -t -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 michaelkang@192.168.219.46 /opt/homebrew/bin/tmux attach || ssh -t -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 michaelkang@100.122.37.52 /opt/homebrew/bin/tmux attach'
+
+# forward ports from mini1 so its dev servers open in this machine's browser
+# usage: mini1fwd [thisport:mini1port | port ...]   (default 3000) — ctrl-c to stop
+#   mini1fwd 3000            → localhost:3000 here → mini1's 3000
+#   mini1fwd 4000:3000 8080  → localhost:4000 here → mini1's 3000, plus 8080 → 8080
+mini1fwd() {
+  local specs=("${@:-3000}") fwd=() local_p remote_p
+  for s in "${specs[@]}"; do
+    local_p="${s%%:*}"; remote_p="${s##*:}"
+    fwd+=(-L "${local_p}:localhost:${remote_p}")
+    echo "http://localhost:${local_p} (this machine) → mini1:${remote_p}"
+  done
+  echo "(ctrl-c to stop)"
+  ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 "${fwd[@]}" michaelkang@192.168.219.46 ||
+    ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 "${fwd[@]}" michaelkang@100.122.37.52
+}
+
 export EDITOR='nvim'
 
 export SOPS_AGE_KEY_FILE=~/Implentio/implentio-local-dev-key.txt
