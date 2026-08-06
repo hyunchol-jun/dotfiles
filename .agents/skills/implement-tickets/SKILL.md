@@ -7,7 +7,7 @@ description: Drive a batch of /to-tickets ticket files to completion — work th
 
 You are the **batch orchestrator**. Take a set of `/to-tickets` local ticket files, order them by
 their blocking edges, and drive each one to completion by **spawning one subagent per ticket that
-runs `/implement`**. The heavy work (TDD cycles, `/code-review-matt`, commits) happens inside each
+runs `/implement`**. The heavy work (TDD cycles, `/code-review`, commits) happens inside each
 subagent and is discarded on return — you keep only compact results. Keeping your own context light
 is an explicit goal.
 
@@ -65,13 +65,13 @@ Never run two subagents at once: they share one working tree. For each ticket in
    > You are implementing one ticket of a stacked batch. Read the ticket file at `<path>` in full —
    > "What to build" is the end-to-end behaviour, the checkboxes are the acceptance criteria. Then
    > invoke the `implement` skill and follow it for exactly this ticket's scope: TDD at the seams,
-   > typecheck and single test files regularly, full suite once at the end, then `code-review-matt`,
+   > typecheck and single test files regularly, full suite once at the end, then `code-review`,
    > then commit to the current branch `<branch>` — you are on the feature branch the caller created
    > for this stacked work; implement in place, do NOT cut a new branch. In your final commit,
    > include the ticket file updated: tick each satisfied acceptance criterion and set
    > `**Status:** done`. Build nothing beyond this ticket's scope — later tickets cover the rest.
    > Return only: `{ status: done|blocked, commit: <sha>, criteria: <n>/<m> green, review: <one-line
-   > code-review-matt outcome>, notes: <one line> }`. If you cannot get the full suite green or hit a
+   > code-review outcome>, notes: <one line> }`. If you cannot get the full suite green or hit a
    > genuine decision only a human can make, commit nothing further, set the ticket's Status line to
    > `blocked — <reason>`, and return status blocked with the reason in notes.
 
