@@ -12,3 +12,6 @@ Explain in plain language by default. Assume I'm smart but don't live inside thi
 - No unexplained acronyms or internal codenames. If a term appeared earlier in the conversation with an explanation, you may reuse it bare.
 - Prefer cause-and-effect sentences ("X failed because Y, so Z happened") over terminology-dense summaries.
 - If I ask a technical question using technical terms, match my level — this rule sets the default, not a ceiling.
+
+## Machine constraints — host mini1 ONLY
+Applies only when running on the host named mini1 (8GB Mac mini); ignore on other machines. On mini1: never run parallel builds or test suites with more than 2 workers (use --maxWorkers=2), and run one heavy task at a time. mini1 has a machine-wide 2GB node heap cap (NODE_OPTIONS in ~/.zshenv); if a legitimate task hits "JavaScript heap out of memory" there, rerun that one command with a higher --max-old-space-size.
