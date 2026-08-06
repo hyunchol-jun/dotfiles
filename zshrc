@@ -1,5 +1,12 @@
 MACHINE_NAME=$(hostname)
 
+# mini1 (8GB): cap node heaps + test parallelism (2026-08-06 watchdog panic)
+if [[ $MACHINE_NAME == mini1* ]]; then
+    export NODE_OPTIONS="--max-old-space-size=2048"
+    export VITEST_MAX_THREADS=2
+    export VITEST_MAX_FORKS=2
+fi
+
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 export PATH=~/bin:~/.local/bin:$PATH
