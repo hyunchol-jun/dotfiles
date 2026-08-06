@@ -37,6 +37,20 @@ alias cc="claude --dangerously-skip-permissions"
 alias cx="codex --yolo"
 alias oc="opencode"
 
+# AWS SSO login without opening a browser: prints a URL + code to complete
+# on any machine (open it in an incognito window to use different credentials).
+# Same as the stack repo's `login` wrapper, plus --use-device-code.
+aws-login-headless() {
+    local config="${AWS_CONFIG_FILE:-$HOME/.aws/config}"
+    local profile
+    profile=$(grep profile "$config" | sed 's/^\[profile \(.*\)\]/\1/' | fzf)
+    if [ -z "$profile" ]; then
+        echo "No profile selected"
+        return 1
+    fi
+    aws --profile "$profile" sso login --use-device-code
+}
+
 alias pgstart='~/dotfiles/postgres-external-scripts/pg-toggle.sh start'
 alias pgstop='~/dotfiles/postgres-external-scripts/pg-toggle.sh stop'
 alias pgstatus='~/dotfiles/postgres-external-scripts/pg-toggle.sh status'
