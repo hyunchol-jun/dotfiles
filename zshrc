@@ -48,7 +48,13 @@ aws-login-headless() {
         echo "No profile selected"
         return 1
     fi
-    aws --profile "$profile" sso login --use-device-code
+    # --use-device-code exists only from CLI 2.22.0; before that, device code
+    # is the default flow and --no-browser stops the browser from opening.
+    autoload -Uz is-at-least
+    local ver="${$(aws --version 2>&1)#aws-cli/}"
+    local flag="--no-browser"
+    is-at-least 2.22.0 "${ver%% *}" && flag="--use-device-code"
+    aws --profile "$profile" sso login "$flag"
 }
 
 alias pgstart='~/dotfiles/postgres-external-scripts/pg-toggle.sh start'
