@@ -6,7 +6,10 @@
 # panes into "needs input" and "idle".
 #
 # Usage:
-#   tmux-agent-sidebar.sh toggle    open/close the sidebar in the current window
+#   tmux-agent-sidebar.sh toggle    open/close the sidebar (one per tmux server)
+#   tmux-agent-sidebar.sh sync [w]  move the open sidebar into window w (default:
+#                                   the current one) — driven by tmux hooks so the
+#                                   sidebar follows you across windows and sessions
 #   tmux-agent-sidebar.sh run       the refresh loop the sidebar pane runs
 #   tmux-agent-sidebar.sh --list    print agent panes on this machine (also piped over ssh)
 #
@@ -208,9 +211,10 @@ jump() {  # focus the highlighted agent's pane
   local host="${ROW_HOST[SEL]}" tgt="${ROW_TGT[SEL]}"
   local sess="${tgt%%:*}" win="${tgt%.*}" wid
   if [ "$host" = "$LOCAL_HOST" ]; then
-    tmux switch-client -t "$sess" 2>/dev/null
-    tmux select-window -t "$win" 2>/dev/null
-    tmux select-pane -t "$tgt" 2>/dev/null
+    # One sequence: switching fires the follow hooks, and they must not land
+    # between the window and the pane selection or the sidebar's move would
+    # hand focus back to the wrong pane.
+    tmux switch-client -t "$sess" \; select-window -t "$win" \; select-pane -t "$tgt" 2>/dev/null
   else
     # Point the remote session at the pane first, then attach — so a fresh
     # attach lands on it and an already-attached window snaps to it.
@@ -277,12 +281,22 @@ run_loop() {
   done
 }
 
+# There is at most one sidebar pane per tmux server, and it roams — so look for
+# it everywhere, not just in the current window.
+find_sidebar() {  # prints "<pane id> <window id>", empty when the sidebar is closed
+  tmux list-panes -a -F '#{@agent_sidebar} #{pane_id} #{window_id}' 2>/dev/null |
+    awk '$1 == 1 { print $2, $3; exit }'
+}
+
 # Opening the sidebar shrinks every existing pane proportionally, but killing it
 # hands all the reclaimed columns back to the one pane beside it — an asymmetric
 # round trip, so the neighbouring pane ratchets wider on every toggle. Stash the
-# window layout on open and restore it on close to make the cycle lossless.
+# window layout on open and restore it on close to make the cycle lossless. The
+# same two ends apply to a move: restore the window it leaves, stash the one it
+# enters.
 close_sidebar() {  # $1 = sidebar pane id
   local id="$1" win saved
+  tmux set -gu @agent_sidebar_on 2>/dev/null       # stop `sync` chasing a dead pane
   win=$(tmux display -p -t "$id" '#{window_id}' 2>/dev/null)
   saved=$(tmux show -wqv -t "$win" @agent_sidebar_layout 2>/dev/null)
   tmux set -wu -t "$win" @agent_sidebar_layout 2>/dev/null
@@ -298,19 +312,68 @@ close_sidebar() {  # $1 = sidebar pane id
 
 toggle() {
   local id
-  id=$(tmux list-panes -F '#{pane_id} #{@agent_sidebar}' | awk '$2 == 1 { print $1; exit }')
+  read -r id _ < <(find_sidebar)
   if [ -n "$id" ]; then
-    close_sidebar "$id"
+    close_sidebar "$id"                            # also clears @agent_sidebar_on
   else
+    # Global, not per-window: `sync` reads it to follow the user around.
+    tmux set -g @agent_sidebar_on 1 2>/dev/null
     tmux set -w @agent_sidebar_layout "$(tmux display -p '#{window_layout}')" 2>/dev/null
     # -f: span the full window height, not just the active pane's slice
     tmux split-window -fhb -l "$WIDTH" "exec '$SELF' run"
   fi
 }
 
+# Called from tmux hooks on every navigation event: while the sidebar is on,
+# drag the one sidebar pane into the window the user just landed in. Moving it
+# rather than kill + respawn keeps the refresh loop, the remote ssh caches and
+# the highlight alive — a respawn would show "…connecting" for up to 8 seconds
+# on every window switch.
+sync() {  # $1 = fallback window, used only when no client is attached
+  [ "$(tmux show -gqv @agent_sidebar_on 2>/dev/null)" = 1 ] || return 0
+  mkdir -p "$CACHE_DIR" 2>/dev/null
+  # Held windows switch faster than a move completes, and the move is a
+  # read-modify-write spanning two windows — overlapping runs stash a layout
+  # that already contains the sidebar, which then wrecks the restore on close.
+  # Serialize them; a lock left behind by a killed sync is broken after ~2s.
+  local lock="$CACHE_DIR/sync.lock" i
+  for ((i = 0; i < 40; i++)); do
+    mkdir "$lock" 2>/dev/null && break
+    sleep 0.05
+  done
+  sync_move "${1:-}"
+  rmdir "$lock" 2>/dev/null
+}
+
+sync_move() {  # $1 = fallback window; call with the sync lock held
+  local win id="" from="" saved here active
+  read -r id from < <(find_sidebar)
+  [ -n "$id" ] || return 0                         # flag on but no pane: nothing to move
+  # Where the user is *now*, not where the hook that queued us fired: by the
+  # time we get the lock the window it named may be two switches stale. Also
+  # the right answer for a detached `new-window -d`, which must not steal it.
+  win=$(tmux display -p '#{window_id}' 2>/dev/null)
+  [ -n "$win" ] || win="${1:-}"
+  [ -n "$win" ] && [ "$from" != "$win" ] || return 0   # already here → also breaks hook recursion
+  saved=$(tmux show -wqv -t "$from" @agent_sidebar_layout 2>/dev/null)
+  # Read both of the target window's "before" facts in one round trip.
+  IFS='|' read -r here active < <(tmux display -p -t "$win" '#{window_layout}|#{pane_id}')
+  # One command sequence so no other hook interleaves mid-move. join-pane goes
+  # first: if it fails (window too narrow) tmux drops the rest and the layout
+  # bookkeeping stays consistent with where the pane actually is.
+  local -a cmd
+  cmd=(join-pane -fhb -l "$WIDTH" -s "$id" -t "$win"
+       ';' set -wu -t "$from" @agent_sidebar_layout
+       ';' set -w -t "$win" @agent_sidebar_layout "$here")
+  [ -n "$saved" ] && cmd+=(';' select-layout -t "$from" "$saved")
+  cmd+=(';' select-pane -t "$active")              # join-pane steals focus; hand it back
+  tmux "${cmd[@]}" 2>/dev/null
+}
+
 case "${1:-run}" in
   --list) list_agents ;;
   toggle) toggle ;;
+  sync)   sync "${2:-}" ;;
   run)    run_loop ;;
-  *)      echo "usage: $0 [toggle|run|--list]" >&2; exit 1 ;;
+  *)      echo "usage: $0 [toggle|sync [window]|run|--list]" >&2; exit 1 ;;
 esac
