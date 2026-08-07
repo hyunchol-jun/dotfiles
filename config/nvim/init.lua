@@ -131,6 +131,12 @@ vim.opt.showmode = false
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
+-- Use OSC 52 in tmux/SSH so yanks reach the terminal on the connecting machine
+-- instead of the remote machine's pbcopy clipboard.
+if vim.env.TMUX or vim.env.SSH_TTY then
+  vim.g.clipboard = 'osc52'
+end
+
 vim.schedule(function()
   vim.opt.clipboard = 'unnamedplus'
 end)
