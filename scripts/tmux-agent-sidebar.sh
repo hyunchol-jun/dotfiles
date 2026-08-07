@@ -266,7 +266,7 @@ run_loop() {
         "")      jump ;;                                # Enter
         j)       move_sel  1; render ;;
         k)       move_sel -1; render ;;
-        q)       exit 0 ;;
+        q)       close_sidebar "${TMUX_PANE:-}"; exit 0 ;;   # restores the layout
         $'\033') IFS= read -rsn2 -t 1 seq || seq=""
                  case "$seq" in
                    '[A'|'OA') move_sel -1; render ;;
@@ -277,12 +277,32 @@ run_loop() {
   done
 }
 
+# Opening the sidebar shrinks every existing pane proportionally, but killing it
+# hands all the reclaimed columns back to the one pane beside it — an asymmetric
+# round trip, so the neighbouring pane ratchets wider on every toggle. Stash the
+# window layout on open and restore it on close to make the cycle lossless.
+close_sidebar() {  # $1 = sidebar pane id
+  local id="$1" win saved
+  win=$(tmux display -p -t "$id" '#{window_id}' 2>/dev/null)
+  saved=$(tmux show -wqv -t "$win" @agent_sidebar_layout 2>/dev/null)
+  tmux set -wu -t "$win" @agent_sidebar_layout 2>/dev/null
+  # One command sequence: the restore is queued server-side before this pane —
+  # and the tmux client issuing it, when called from the sidebar's own q key —
+  # dies. select-layout fails harmlessly if panes came or went meanwhile.
+  if [ -n "$saved" ]; then
+    tmux kill-pane -t "$id" \; select-layout -t "$win" "$saved" 2>/dev/null
+  else
+    tmux kill-pane -t "$id" 2>/dev/null
+  fi
+}
+
 toggle() {
   local id
   id=$(tmux list-panes -F '#{pane_id} #{@agent_sidebar}' | awk '$2 == 1 { print $1; exit }')
   if [ -n "$id" ]; then
-    tmux kill-pane -t "$id"
+    close_sidebar "$id"
   else
+    tmux set -w @agent_sidebar_layout "$(tmux display -p '#{window_layout}')" 2>/dev/null
     # -f: span the full window height, not just the active pane's slice
     tmux split-window -fhb -l "$WIDTH" "exec '$SELF' run"
   fi
