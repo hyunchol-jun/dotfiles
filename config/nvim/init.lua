@@ -131,10 +131,31 @@ vim.opt.showmode = false
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
--- Use OSC 52 in tmux/SSH so yanks reach the terminal on the connecting machine
--- instead of the remote machine's pbcopy clipboard.
+-- In tmux/SSH, copy through OSC 52 so yanks reach the connecting machine, and
+-- through pbcopy so local register reads stay fast. OSC 52 reads do not make it
+-- back through tmux reliably and otherwise block for up to ten seconds.
 if vim.env.TMUX or vim.env.SSH_TTY then
-  vim.g.clipboard = 'osc52'
+  local osc52 = require 'vim.ui.clipboard.osc52'
+
+  local function copy(reg)
+    local osc52_copy = osc52.copy(reg)
+    return function(lines)
+      osc52_copy(lines)
+      vim.fn.system('pbcopy', table.concat(lines, '\n'))
+    end
+  end
+
+  vim.g.clipboard = {
+    name = 'OSC 52 + pbcopy',
+    copy = {
+      ['+'] = copy '+',
+      ['*'] = copy '*',
+    },
+    paste = {
+      ['+'] = { 'pbpaste' },
+      ['*'] = { 'pbpaste' },
+    },
+  }
 end
 
 vim.schedule(function()
