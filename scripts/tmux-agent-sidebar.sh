@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # tmux-agent-sidebar: herdr-style sidebar pane listing every tmux pane that is
 # running a Claude Code / codex agent — on this machine and on remote hosts —
-# with live status read from the pane title (spinner = busy, ✳ = waiting).
+# with live status from the pane title (spinner = busy) crossed with the hook-
+# written state file (see .claude/agent-state.sh) that splits the non-busy ✳
+# panes into "needs input" and "idle".
 #
 # Usage:
 #   tmux-agent-sidebar.sh toggle    open/close the sidebar in the current window
@@ -44,19 +46,24 @@ CACHE_DIR="${TMPDIR:-/tmp}/agent-sidebar-$USER"
 list_agents() {
   local panes
   # \r-joined because macOS awk rejects literal newlines in -v strings
-  panes=$(tmux list-panes -a -F '#{pane_pid}|#{session_name}:#{window_index}.#{pane_index}|#{pane_title}' 2>/dev/null | tr '\n' '\r')
+  panes=$(tmux list-panes -a -F '#{pane_pid}|#{pane_id}|#{session_name}:#{window_index}.#{pane_index}|#{pane_title}' 2>/dev/null | tr '\n' '\r')
   [ -n "$panes" ] || return 0
-  ps -Ao pid=,ppid=,comm= | awk -v panes="$panes" '
+  # Third output column: the pane's hook-written state (see .claude/agent-state.sh).
+  # Read from THIS machine's home — over ssh --list runs remotely, so a remote
+  # pane is matched against the remote host's own state dir.
+  ps -Ao pid=,ppid=,comm= | awk -v panes="$panes" -v statedir="$HOME/.claude/.agent-state" '
     { parent[$1] = $2; comm[$1] = $3 }
     END {
       n = split(panes, L, "\r")
       for (i = 1; i <= n; i++) {
         line = L[i]
         p1 = index(line, "|"); rest = substr(line, p1 + 1)
-        p2 = index(rest, "|")
+        p2 = index(rest, "|"); rest2 = substr(rest, p2 + 1)
+        p3 = index(rest2, "|")
         pid = substr(line, 1, p1 - 1)
-        tgt[pid] = substr(rest, 1, p2 - 1)
-        ttl[pid] = substr(rest, p2 + 1)
+        pane[pid] = substr(rest, 1, p2 - 1)
+        tgt[pid] = substr(rest2, 1, p3 - 1)
+        ttl[pid] = substr(rest2, p3 + 1)
         order[i] = pid
         ispane[pid] = 1
       }
@@ -69,39 +76,52 @@ list_agents() {
           }
         }
       }
-      for (i = 1; i <= n; i++)
-        if (hit[order[i]]) printf "%s\t%s\n", tgt[order[i]], ttl[order[i]]
+      for (i = 1; i <= n; i++) {
+        pid = order[i]
+        if (!hit[pid]) continue
+        id = pane[pid]; sub(/^%/, "", id)
+        state = ""
+        f = statedir "/" id
+        if ((getline state < f) <= 0) state = ""
+        close(f)
+        printf "%s\t%s\t%s\n", tgt[pid], ttl[pid], state
+      }
     }'
 }
 
 # ── rendering ────────────────────────────────────────────────────────────────
 C_RESET=$'\033[0m'; C_DIM=$'\033[2m'; C_BUSY=$'\033[36m'; C_WAIT=$'\033[1;33m'; C_ERR=$'\033[31m'
-FRAME=""; N_BUSY=0; N_WAIT=0
+C_IDLE=$'\033[90m'
+FRAME=""; N_BUSY=0; N_WAIT=0; N_IDLE=0
 
-append_section() {  # $1 = host label, stdin = "target<TAB>title" lines
-  local label="$1" cols target title first status avail line
+append_section() {  # $1 = host label, stdin = "target<TAB>title<TAB>state" lines
+  local label="$1" cols target title state first status avail line
   # pane width from tmux — tput honors an inherited COLUMNS env var and lies
   cols=$(tmux display -p -t "${TMUX_PANE:-}" '#{pane_width}' 2>/dev/null) || cols=$WIDTH
   [ -n "$cols" ] || cols=$WIDTH
   FRAME+="${C_DIM}── ${label} ──${C_RESET}"$'\n'
   local any=0
-  while IFS=$'\t' read -r target title; do
+  while IFS=$'\t' read -r target title state; do
     [ -n "$target" ] || continue
     any=1
     first="${title:0:1}"
+    # Title wins over the state file: a spinner means busy no matter what the
+    # last hook wrote. Self-heals the gap where approving a permission prompt
+    # fires no hook, leaving a stale "input" file while the agent works.
     case "$first" in
       "✳") status=wait; title="${title:1}" ;;
       "✢"|"✶"|"✻"|"✽"|"·"|"∗"|"*"|[⠀-⣿]) status=busy; title="${title:1}" ;;
       *)   status=busy ;;
     esac
+    [ "$status" = wait ] && [ "$state" != input ] && status=idle
     title="${title# }"
     avail=$(( cols - ${#target} - 4 )); [ "$avail" -lt 4 ] && avail=4
     title="${title:0:$avail}"
-    if [ "$status" = wait ]; then
-      N_WAIT=$((N_WAIT + 1)); line="${C_WAIT}● ${target}${C_RESET} ${title}"
-    else
-      N_BUSY=$((N_BUSY + 1)); line="${C_BUSY}● ${target}${C_RESET} ${C_DIM}${title}${C_RESET}"
-    fi
+    case "$status" in
+      wait) N_WAIT=$((N_WAIT + 1)); line="${C_WAIT}● ${target}${C_RESET} ${title}" ;;
+      idle) N_IDLE=$((N_IDLE + 1)); line="${C_IDLE}● ${target}${C_RESET} ${C_DIM}${title}${C_RESET}" ;;
+      *)    N_BUSY=$((N_BUSY + 1)); line="${C_BUSY}● ${target}${C_RESET} ${C_DIM}${title}${C_RESET}" ;;
+    esac
     FRAME+="${line}"$'\n'
   done
   [ "$any" = 1 ] || FRAME+="${C_DIM}  (no agents)${C_RESET}"$'\n'
@@ -134,7 +154,7 @@ run_loop() {
         [ -e "$CACHE_DIR/$host.new" ] || fetch_remote "$host" &
       done
     fi
-    FRAME=""; N_BUSY=0; N_WAIT=0
+    FRAME=""; N_BUSY=0; N_WAIT=0; N_IDLE=0
     append_section "$LOCAL_HOST" < <(list_agents)
     for host in $HOSTS; do
       [ "$host" = "$LOCAL_HOST" ] && continue
@@ -148,8 +168,9 @@ run_loop() {
         FRAME+="${C_DIM}── ${host} ──${C_RESET}"$'\n'"${C_DIM}  …connecting${C_RESET}"$'\n\n'
       fi
     done
-    printf '\033[H %s AGENTS %s  %s%d busy%s · %s%d waiting%s\033[K\n\n%s\033[J' \
+    printf '\033[H %s AGENTS %s  %s%d busy%s · %s%d input%s · %s%d idle%s\033[K\n\n%s\033[J' \
       "$C_DIM" "$C_RESET" "$C_BUSY" "$N_BUSY" "$C_RESET" "$C_WAIT" "$N_WAIT" "$C_RESET" \
+      "$C_IDLE" "$N_IDLE" "$C_RESET" \
       "$(printf '%s' "$FRAME" | sed $'s/$/\033[K/')"
     sleep "$TICK_SECS"
     tick=$((tick + 1))

@@ -17,7 +17,6 @@
     "deny": [],
     "defaultMode": "auto"
   },
-  "model": "claude-fable-5[1m]",
   "hooks": {
     "Notification": [
       {
@@ -26,6 +25,10 @@
           {
             "type": "command",
             "command": "bash ~/.claude/ntfy-notify.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/agent-state.sh input"
           }
         ]
       }
@@ -37,6 +40,21 @@
           {
             "type": "command",
             "command": "bash ~/.claude/tts-notify.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/agent-state.sh done"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/agent-state.sh clear"
           }
         ]
       }
@@ -56,6 +74,10 @@
           {
             "type": "command",
             "command": "case \"$CLAUDE_PROJECT_DIR\" in *Implentio/stack*) cat \"$HOME/dotfiles/.claude/stack-memory.md\" 2>/dev/null || true ;; esac"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/agent-state.sh clear"
           }
         ]
       }
