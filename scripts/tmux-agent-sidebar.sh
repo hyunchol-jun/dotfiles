@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+# tmux-agent-sidebar: herdr-style sidebar pane listing every tmux pane that is
+# running a Claude Code / codex agent — on this machine and on remote hosts —
+# with live status read from the pane title (spinner = busy, ✳ = waiting).
+#
+# Usage:
+#   tmux-agent-sidebar.sh toggle    open/close the sidebar in the current window
+#   tmux-agent-sidebar.sh run       the refresh loop the sidebar pane runs
+#   tmux-agent-sidebar.sh --list    print agent panes on this machine (also piped over ssh)
+#
+# Config — tmux options (set in tmux.conf, reload with prefix+r), env vars as
+# fallback when running outside tmux:
+#   @agent_sidebar_hosts / AGENT_SIDEBAR_HOSTS   space-separated ssh hosts to poll
+#   @agent_sidebar_width / AGENT_SIDEBAR_WIDTH   sidebar width in columns (default 44)
+#
+# The host list should name EVERY machine in the mesh: the local hostname is
+# auto-skipped, so the identical dotfiles line works on all of them. Hosts are
+# plain ssh destinations — aliases, users, ports, jump hosts from ~/.ssh/config
+# all work. A new machine needs only: (1) its name added to the list,
+# (2) passwordless ssh to it (ssh-copy-id <host>). Nothing is installed
+# remotely; this script is piped over ssh, so remotes just need tmux + sshd.
+# Unreachable or unauthenticated hosts show an error line instead of blocking.
+
+set -u
+PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
+export LC_ALL=en_US.UTF-8
+
+SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+# tmux option first (survives config reloads; run-shell only sees the tmux
+# server's stale env), then env var for non-tmux invocations.
+HOSTS="$(tmux show -gqv @agent_sidebar_hosts 2>/dev/null)"
+[ -n "$HOSTS" ] || HOSTS="${AGENT_SIDEBAR_HOSTS-}"
+LOCAL_HOST="$(hostname -s)"
+WIDTH="$(tmux show -gqv @agent_sidebar_width 2>/dev/null)"
+[ -n "$WIDTH" ] || WIDTH="${AGENT_SIDEBAR_WIDTH:-44}"
+TICK_SECS=2
+REMOTE_EVERY=4                     # poll remotes every Nth tick (= every 8s)
+CACHE_DIR="${TMPDIR:-/tmp}/agent-sidebar-$USER"
+
+# ── agent discovery ──────────────────────────────────────────────────────────
+# A pane counts as an agent pane when a claude/codex process is alive somewhere
+# under its shell — pane titles alone lie (they stick around after the agent
+# exits), so walk the process tree instead.
+list_agents() {
+  local panes
+  # \r-joined because macOS awk rejects literal newlines in -v strings
+  panes=$(tmux list-panes -a -F '#{pane_pid}|#{session_name}:#{window_index}.#{pane_index}|#{pane_title}' 2>/dev/null | tr '\n' '\r')
+  [ -n "$panes" ] || return 0
+  ps -Ao pid=,ppid=,comm= | awk -v panes="$panes" '
+    { parent[$1] = $2; comm[$1] = $3 }
+    END {
+      n = split(panes, L, "\r")
+      for (i = 1; i <= n; i++) {
+        line = L[i]
+        p1 = index(line, "|"); rest = substr(line, p1 + 1)
+        p2 = index(rest, "|")
+        pid = substr(line, 1, p1 - 1)
+        tgt[pid] = substr(rest, 1, p2 - 1)
+        ttl[pid] = substr(rest, p2 + 1)
+        order[i] = pid
+        ispane[pid] = 1
+      }
+      for (pid in comm) {
+        if (comm[pid] ~ /(^|\/)(claude|codex)$/) {
+          p = pid
+          for (hops = 0; hops < 50 && (p in parent); hops++) {
+            if (ispane[p]) { hit[p] = 1; break }
+            p = parent[p]
+          }
+        }
+      }
+      for (i = 1; i <= n; i++)
+        if (hit[order[i]]) printf "%s\t%s\n", tgt[order[i]], ttl[order[i]]
+    }'
+}
+
+# ── rendering ────────────────────────────────────────────────────────────────
+C_RESET=$'\033[0m'; C_DIM=$'\033[2m'; C_BUSY=$'\033[36m'; C_WAIT=$'\033[1;33m'; C_ERR=$'\033[31m'
+FRAME=""; N_BUSY=0; N_WAIT=0
+
+append_section() {  # $1 = host label, stdin = "target<TAB>title" lines
+  local label="$1" cols target title first status avail line
+  # pane width from tmux — tput honors an inherited COLUMNS env var and lies
+  cols=$(tmux display -p -t "${TMUX_PANE:-}" '#{pane_width}' 2>/dev/null) || cols=$WIDTH
+  [ -n "$cols" ] || cols=$WIDTH
+  FRAME+="${C_DIM}── ${label} ──${C_RESET}"$'\n'
+  local any=0
+  while IFS=$'\t' read -r target title; do
+    [ -n "$target" ] || continue
+    any=1
+    first="${title:0:1}"
+    case "$first" in
+      "✳") status=wait; title="${title:1}" ;;
+      "✢"|"✶"|"✻"|"✽"|"·"|"∗"|"*"|[⠀-⣿]) status=busy; title="${title:1}" ;;
+      *)   status=busy ;;
+    esac
+    title="${title# }"
+    avail=$(( cols - ${#target} - 4 )); [ "$avail" -lt 4 ] && avail=4
+    title="${title:0:$avail}"
+    if [ "$status" = wait ]; then
+      N_WAIT=$((N_WAIT + 1)); line="${C_WAIT}● ${target}${C_RESET} ${title}"
+    else
+      N_BUSY=$((N_BUSY + 1)); line="${C_BUSY}● ${target}${C_RESET} ${C_DIM}${title}${C_RESET}"
+    fi
+    FRAME+="${line}"$'\n'
+  done
+  [ "$any" = 1 ] || FRAME+="${C_DIM}  (no agents)${C_RESET}"$'\n'
+  FRAME+=$'\n'
+}
+
+fetch_remote() {  # background job: refresh one host's cache file
+  local host="$1" out="$CACHE_DIR/$host"
+  if ssh -o BatchMode=yes -o ConnectTimeout=3 -o ServerAliveInterval=5 -o ServerAliveCountMax=2 \
+      "$host" bash -s -- --list < "$SELF" > "$out.new" 2>/dev/null; then
+    mv "$out.new" "$out"
+  else
+    printf 'ERR\n' > "$out"
+    rm -f "$out.new"
+  fi
+}
+
+run_loop() {
+  mkdir -p "$CACHE_DIR"
+  tmux set -p @agent_sidebar 1 2>/dev/null
+  tmux select-pane -T agents 2>/dev/null
+  printf '\033[?25l\033[2J'                 # hide cursor, clear once
+  trap 'printf "\033[?25h"; exit 0' INT TERM EXIT
+  local tick=0 host
+  while :; do
+    if (( tick % REMOTE_EVERY == 0 )); then
+      for host in $HOSTS; do
+        [ "$host" = "$LOCAL_HOST" ] && continue
+        # skip if the previous fetch for this host is still running
+        [ -e "$CACHE_DIR/$host.new" ] || fetch_remote "$host" &
+      done
+    fi
+    FRAME=""; N_BUSY=0; N_WAIT=0
+    append_section "$LOCAL_HOST" < <(list_agents)
+    for host in $HOSTS; do
+      [ "$host" = "$LOCAL_HOST" ] && continue
+      if [ -f "$CACHE_DIR/$host" ]; then
+        if [ "$(head -1 "$CACHE_DIR/$host")" = "ERR" ]; then
+          FRAME+="${C_DIM}── ${host} ──${C_RESET}"$'\n'"${C_ERR}  ✗ ssh failed${C_RESET} ${C_DIM}(ssh-copy-id ${host}?)${C_RESET}"$'\n\n'
+        else
+          append_section "$host" < "$CACHE_DIR/$host"
+        fi
+      else
+        FRAME+="${C_DIM}── ${host} ──${C_RESET}"$'\n'"${C_DIM}  …connecting${C_RESET}"$'\n\n'
+      fi
+    done
+    printf '\033[H %s AGENTS %s  %s%d busy%s · %s%d waiting%s\033[K\n\n%s\033[J' \
+      "$C_DIM" "$C_RESET" "$C_BUSY" "$N_BUSY" "$C_RESET" "$C_WAIT" "$N_WAIT" "$C_RESET" \
+      "$(printf '%s' "$FRAME" | sed $'s/$/\033[K/')"
+    sleep "$TICK_SECS"
+    tick=$((tick + 1))
+  done
+}
+
+toggle() {
+  local id
+  id=$(tmux list-panes -F '#{pane_id} #{@agent_sidebar}' | awk '$2 == 1 { print $1; exit }')
+  if [ -n "$id" ]; then
+    tmux kill-pane -t "$id"
+  else
+    # -f: span the full window height, not just the active pane's slice
+    tmux split-window -fhb -l "$WIDTH" "exec '$SELF' run"
+  fi
+}
+
+case "${1:-run}" in
+  --list) list_agents ;;
+  toggle) toggle ;;
+  run)    run_loop ;;
+  *)      echo "usage: $0 [toggle|run|--list]" >&2; exit 1 ;;
+esac
