@@ -2,7 +2,7 @@ MACHINE_NAME=$(hostname)
 
 # mini1 (8GB): cap node heaps + test parallelism (2026-08-06 watchdog panic)
 if [[ $MACHINE_NAME == mini1* ]]; then
-    export NODE_OPTIONS="--max-old-space-size=2048"
+    export NODE_OPTIONS="--max-old-space-size=4096"
     export VITEST_MAX_THREADS=2
     export VITEST_MAX_FORKS=2
 fi
