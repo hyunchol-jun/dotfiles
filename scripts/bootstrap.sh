@@ -26,6 +26,11 @@ case "$(uname -s)" in
     ;;
 esac
 
+# Non-interactive shells (ssh) don't source zshrc, so put brew and
+# mise-managed tools (node/npm) on PATH explicitly
+[ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
+command -v mise &>/dev/null && eval "$(mise activate bash --shims)"
+
 # Dotbot symlinks
 echo "==> Running Dotbot..."
 "$DOTFILES_DIR/install"
