@@ -127,6 +127,7 @@
       }
     }
   },
+  "editorMode": "vim",
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
   "tui": "fullscreen",
