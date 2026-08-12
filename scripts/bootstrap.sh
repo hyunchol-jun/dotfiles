@@ -60,8 +60,12 @@ fi
 
 # rclone (installed from official binary on macOS for FUSE mount support)
 if ! command -v rclone &>/dev/null; then
-  echo "==> Installing rclone..."
-  sudo -v ; curl https://rclone.org/install.sh | sudo bash
+  if [ -t 0 ]; then
+    echo "==> Installing rclone..."
+    sudo -v ; curl https://rclone.org/install.sh | sudo bash
+  else
+    echo "==> Skipping rclone (needs sudo; run bootstrap.sh in a terminal to install)"
+  fi
 else
   echo "==> rclone already installed"
 fi
