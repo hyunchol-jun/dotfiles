@@ -78,7 +78,10 @@ alias dbt-r='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h 
 alias dbt-rw='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h localhost -r Superuser'
 
 # attach to mini1's tmux over LAN (falls back to tailscale IP if LAN fails)
-alias mini1='ssh -t -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 michaelkang@192.168.219.46 /opt/homebrew/bin/tmux attach || ssh -t -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 michaelkang@100.122.37.52 /opt/homebrew/bin/tmux attach'
+alias mini1='ssh -t -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 michaelkang@100.122.37.52 /opt/homebrew/bin/tmux attach || ssh -t -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 michaelkang@100.122.37.52 /opt/homebrew/bin/tmux attach'
+
+# attach to mini2's tmux over tailscale
+alias mini2='ssh -t -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 josephjun@100.119.210.87 /opt/homebrew/bin/tmux attach || ssh -t -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 josephjun@100.119.210.87 /opt/homebrew/bin/tmux attach'
 
 # forward ports from mini1 so its dev servers open in this machine's browser
 # usage: mini1fwd [thisport:mini1port | port ...]   (default 3000) — ctrl-c to stop
@@ -92,8 +95,63 @@ mini1fwd() {
     echo "http://localhost:${local_p} (this machine) → mini1:${remote_p}"
   done
   echo "(ctrl-c to stop)"
-  ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 "${fwd[@]}" michaelkang@192.168.219.46 ||
+  ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 "${fwd[@]}" michaelkang@100.122.37.52 ||
     ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 "${fwd[@]}" michaelkang@100.122.37.52
+}
+
+# same as mini1fwd, for mini2
+mini2fwd() {
+  local specs=("${@:-3000}") fwd=() local_p remote_p
+  for s in "${specs[@]}"; do
+    local_p="${s%%:*}"; remote_p="${s##*:}"
+    fwd+=(-L "${local_p}:localhost:${remote_p}")
+    echo "http://localhost:${local_p} (this machine) → mini2:${remote_p}"
+  done
+  echo "(ctrl-c to stop)"
+  ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 "${fwd[@]}" josephjun@100.119.210.87 ||
+    ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 "${fwd[@]}" josephjun@100.119.210.87
+}
+
+# copy a file (default: newest Desktop screenshot) to mini1 and put mini1's path
+# on this machine's clipboard, so you can cmd-v it into mini1's claude code.
+# usage: mini1send            → newest ~/Desktop screenshot
+#        mini1send some.png   → that file
+mini1send() {
+  local src="$1" dest
+  if [[ -z "$src" ]]; then
+    src=$(print -rl -- ~/Desktop/*.(png|jpg|jpeg)(NDom) 2>/dev/null | head -1)
+    [[ -z "$src" ]] && { echo "no image on ~/Desktop"; return 1; }
+  fi
+  [[ -f "$src" ]] || { echo "no such file: $src"; return 1; }
+  # spaces break path detection when pasted (macOS shots also use U+202F), so flatten
+  dest="/Users/michaelkang/Desktop/from-mbp/${${src:t}//[^A-Za-z0-9._-]/_}"
+  local ssh_opts=(-o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5)
+  local host=192.168.219.46
+  ssh "${ssh_opts[@]}" michaelkang@$host true 2>/dev/null || host=100.122.37.52
+  ssh "${ssh_opts[@]}" michaelkang@$host 'mkdir -p ~/Desktop/from-mbp' || return 1
+  scp "${ssh_opts[@]}" "$src" "michaelkang@$host:$dest" >/dev/null || return 1
+  print -rn -- "$dest" | pbcopy
+  echo "sent ${src:t} → mini1"
+  echo "path copied to clipboard: $dest"
+}
+
+# same as mini1send, for mini2 (tailscale IP only — no LAN fallback)
+mini2send() {
+  local src="$1" dest
+  if [[ -z "$src" ]]; then
+    src=$(print -rl -- ~/Desktop/*.(png|jpg|jpeg)(NDom) 2>/dev/null | head -1)
+    [[ -z "$src" ]] && { echo "no image on ~/Desktop"; return 1; }
+  fi
+  [[ -f "$src" ]] || { echo "no such file: $src"; return 1; }
+  # spaces break path detection when pasted (macOS shots also use U+202F), so flatten
+  dest="/Users/josephjun/Desktop/from-mbp/${${src:t}//[^A-Za-z0-9._-]/_}"
+  local ssh_opts=(-o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5)
+  local host=100.119.210.87
+  ssh "${ssh_opts[@]}" josephjun@$host 'mkdir -p ~/Desktop/from-mbp' || return 1
+  scp "${ssh_opts[@]}" "$src" "josephjun@$host:$dest" >/dev/null || return 1
+  print -rn -- "$dest" | pbcopy
+  echo "sent ${src:t} → mini2"
+  echo "path copied to clipboard: $dest"
 }
 
 export EDITOR='nvim'
