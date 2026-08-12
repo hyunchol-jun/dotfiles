@@ -49,7 +49,7 @@ fi
 
 # Screen Sharing (built-in VNC) — lets other machines connect via
 # Finder cmd-K vnc://<host> or the Screen Sharing app, incl. over tailscale
-if ! sudo launchctl print system/com.apple.screensharing &>/dev/null; then
+if ! launchctl print system/com.apple.screensharing &>/dev/null; then
   echo "==> Enabling Screen Sharing..."
   sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.screensharing.plist
 fi
