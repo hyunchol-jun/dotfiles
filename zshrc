@@ -41,6 +41,9 @@ alias pip=pip3
 alias v="nvim"
 alias y="yazi"
 alias cc="claude --dangerously-skip-permissions"
+alias ccfh="claude --dangerously-skip-permissions --model fable --effort high"
+alias ccfm="claude --dangerously-skip-permissions --model fable --effort medium"
+alias ccox="claude --dangerously-skip-permissions --model opus --effort xhigh"
 alias cx="codex --yolo"
 alias oc="opencode"
 
