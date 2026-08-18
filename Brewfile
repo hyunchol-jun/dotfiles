@@ -1,6 +1,7 @@
 # Formulae
 brew "neovim"
 brew "tmux"
+brew "mosh"
 brew "htop"
 brew "git"
 brew "tldr"

@@ -80,11 +80,36 @@ alias dbumount='umount ~/Dropbox && kill $(lsof -ti :2049) 2>/dev/null'
 alias dbt-r='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h localhost -r Reader'
 alias dbt-rw='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h localhost -r Superuser'
 
-# attach to mini1's tmux over LAN (falls back to tailscale IP if LAN fails)
-alias mini1='ssh -t -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 michaelkang@100.122.37.52 /opt/homebrew/bin/tmux attach || ssh -t -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 michaelkang@100.122.37.52 /opt/homebrew/bin/tmux attach'
+# attach to a remote box's tmux over tailscale.
+# mosh survives IP changes, tailscale path flips (DERP<->direct), and wifi drops,
+# and resumes on its own. its UDP rides inside the tailscale tunnel, so it also works
+# on networks that block UDP outright. predict=adaptive stays quiet on a fast LAN
+# and turns on local echo automatically once latency climbs (i.e. when working outside).
+# `-i`/IdentitiesOnly are passed explicitly rather than relying on ~/.ssh/config,
+# which is untracked — keeps these working on a fresh machine.
+# NETWORK_TMOUT bounds orphaned mosh-servers (each one holds a tmux client) but is set
+# to a week, not a day, so a box you haven't touched in a while still resumes. when the
+# server does time out the tmux session itself survives untouched.
+_remote_mosh() {  # $1 = short name (for errors), $2 = user@host
+  mosh --ssh="ssh -o IdentitiesOnly=yes -i $HOME/.ssh/id_ed25519 -o ConnectTimeout=15" \
+       --server="MOSH_SERVER_NETWORK_TMOUT=604800 /opt/homebrew/bin/mosh-server" \
+       --predict=adaptive \
+       "$2" -- /opt/homebrew/bin/tmux attach \
+    || { echo "mosh to $1 failed — check tailscale is connected, or try ${1}ssh" >&2; return 1; }
+}
 
-# attach to mini2's tmux over tailscale
-alias mini2='ssh -t -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 josephjun@100.119.210.87 /opt/homebrew/bin/tmux attach || ssh -t -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 josephjun@100.119.210.87 /opt/homebrew/bin/tmux attach'
+# plain-ssh fallback for attaching, when mosh is unavailable. anything else mosh
+# cannot do (scp, port forwarding) lives in the *send / *fwd helpers below.
+_remote_ssh() {  # $1 = user@host
+  ssh -t -o IdentitiesOnly=yes -i "$HOME/.ssh/id_ed25519" \
+      -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ConnectTimeout=15 \
+      "$1" /opt/homebrew/bin/tmux attach
+}
+
+alias mini1='_remote_mosh mini1 michaelkang@100.122.37.52'
+alias mini2='_remote_mosh mini2 josephjun@100.119.210.87'
+alias mini1ssh='_remote_ssh michaelkang@100.122.37.52'
+alias mini2ssh='_remote_ssh josephjun@100.119.210.87'
 
 # forward ports from mini1 so its dev servers open in this machine's browser
 # usage: mini1fwd [thisport:mini1port | port ...]   (default 3000) — ctrl-c to stop
@@ -98,8 +123,8 @@ mini1fwd() {
     echo "http://localhost:${local_p} (this machine) → mini1:${remote_p}"
   done
   echo "(ctrl-c to stop)"
-  ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 "${fwd[@]}" michaelkang@100.122.37.52 ||
-    ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 "${fwd[@]}" michaelkang@100.122.37.52
+  ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ConnectTimeout=15 "${fwd[@]}" michaelkang@100.122.37.52 ||
+    ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ConnectTimeout=15 "${fwd[@]}" michaelkang@100.122.37.52
 }
 
 # same as mini1fwd, for mini2
@@ -111,8 +136,8 @@ mini2fwd() {
     echo "http://localhost:${local_p} (this machine) → mini2:${remote_p}"
   done
   echo "(ctrl-c to stop)"
-  ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 "${fwd[@]}" josephjun@100.119.210.87 ||
-    ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 "${fwd[@]}" josephjun@100.119.210.87
+  ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ConnectTimeout=15 "${fwd[@]}" josephjun@100.119.210.87 ||
+    ssh -N -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ConnectTimeout=15 "${fwd[@]}" josephjun@100.119.210.87
 }
 
 # copy a file (default: newest Desktop screenshot) to mini1 and put mini1's path
@@ -128,9 +153,9 @@ mini1send() {
   [[ -f "$src" ]] || { echo "no such file: $src"; return 1; }
   # spaces break path detection when pasted (macOS shots also use U+202F), so flatten
   dest="/Users/michaelkang/Desktop/from-mbp/${${src:t}//[^A-Za-z0-9._-]/_}"
-  local ssh_opts=(-o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5)
-  local host=192.168.219.46
-  ssh "${ssh_opts[@]}" michaelkang@$host true 2>/dev/null || host=100.122.37.52
+  local ssh_opts=(-o IdentitiesOnly=yes -i ~/.ssh/id_ed25519
+                  -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ConnectTimeout=15)
+  local host=100.122.37.52
   ssh "${ssh_opts[@]}" michaelkang@$host 'mkdir -p ~/Desktop/from-mbp' || return 1
   scp "${ssh_opts[@]}" "$src" "michaelkang@$host:$dest" >/dev/null || return 1
   print -rn -- "$dest" | pbcopy
@@ -138,7 +163,7 @@ mini1send() {
   echo "path copied to clipboard: $dest"
 }
 
-# same as mini1send, for mini2 (tailscale IP only — no LAN fallback)
+# same as mini1send, for mini2
 mini2send() {
   local src="$1" dest
   if [[ -z "$src" ]]; then
@@ -148,7 +173,8 @@ mini2send() {
   [[ -f "$src" ]] || { echo "no such file: $src"; return 1; }
   # spaces break path detection when pasted (macOS shots also use U+202F), so flatten
   dest="/Users/josephjun/Desktop/from-mbp/${${src:t}//[^A-Za-z0-9._-]/_}"
-  local ssh_opts=(-o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -o ConnectTimeout=5)
+  local ssh_opts=(-o IdentitiesOnly=yes -i ~/.ssh/id_ed25519
+                  -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ConnectTimeout=15)
   local host=100.119.210.87
   ssh "${ssh_opts[@]}" josephjun@$host 'mkdir -p ~/Desktop/from-mbp' || return 1
   scp "${ssh_opts[@]}" "$src" "josephjun@$host:$dest" >/dev/null || return 1
