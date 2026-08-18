@@ -12,4 +12,4 @@ Run typechecking regularly, single test files regularly, and the full test suite
 
 Once done, use /code-review to review the work.
 
-Commit your work to the current branch.
+Commit your work to the current branch. Commit messages must stand on their own: describe the change and its motivation directly. Never reference the plan doc, spec file, or ticket files (e.g. "as described in PLAN.md", "per the spec", "implements ticket 03") — those files are not checked in, so reviewers reading the git history can't see them.
