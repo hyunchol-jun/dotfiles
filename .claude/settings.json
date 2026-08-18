@@ -17,6 +17,7 @@
     "deny": [],
     "defaultMode": "auto"
   },
+  "model": "claude-fable-5[1m]",
   "hooks": {
     "Notification": [
       {
@@ -61,14 +62,6 @@
     ],
     "SessionStart": [
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"/Users/hyuncholjun/.claude/hooks/gsd-check-update.js\""
-          }
-        ]
-      },
-      {
         "matcher": "startup|resume|clear",
         "hooks": [
           {
@@ -78,30 +71,6 @@
           {
             "type": "command",
             "command": "bash ~/.claude/agent-state.sh clear"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash|Edit|Write|MultiEdit|Agent|Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"/Users/hyuncholjun/.claude/hooks/gsd-context-monitor.js\"",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"/Users/hyuncholjun/.claude/hooks/gsd-prompt-guard.js\"",
-            "timeout": 5
           }
         ]
       }
@@ -127,12 +96,12 @@
       }
     }
   },
-  "editorMode": "vim",
   "alwaysThinkingEnabled": true,
-  "effortLevel": "high",
+  "effortLevel": "medium",
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "theme": "dark",
+  "editorMode": "vim",
   "preferredNotifChannel": "terminal_bell",
   "autoCompactEnabled": false,
   "agentPushNotifEnabled": true,
