@@ -49,6 +49,10 @@ alias oc="opencode"
 # Same as the stack repo's `login` wrapper, plus --use-device-code.
 aws-login-headless() {
     local config="${AWS_CONFIG_FILE:-$HOME/.aws/config}"
+    # No profiles in the personal config → fall back to the stack repo's
+    if ! grep -q '^\[profile ' "$config" 2>/dev/null; then
+        config="$HOME/Implentio/stack/main/.aws/config"
+    fi
     local profile
     profile=$(grep profile "$config" | sed 's/^\[profile \(.*\)\]/\1/' | fzf)
     if [ -z "$profile" ]; then
