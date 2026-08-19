@@ -11,9 +11,6 @@ fi
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 export PATH=~/bin:~/.local/bin:$PATH
 
-# Nix
-[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ] && . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-
 # Prompt
 autoload -Uz vcs_info
 precmd() { vcs_info }
