@@ -230,7 +230,7 @@ elif [[ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlightin
 fi
 
 # opencode
-export PATH=/Users/hyuncholjun/.opencode/bin:$PATH
+export PATH=$HOME/.opencode/bin:$PATH
 
 # OpenRouter key for the walkthrough-video TTS skill.
 # Read from the git-ignored stack .env rather than hardcoded — this repo is pushed to GitHub.
