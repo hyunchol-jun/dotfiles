@@ -13,3 +13,5 @@ config/grammarly-languageserver
 
 github-copilot/
 config/rclone/
+config/kis-hoga/
+config/gh/
