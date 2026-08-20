@@ -21,6 +21,7 @@
     ~/.claude/tts-notify.sh: .claude/tts-notify.sh
     ~/.claude/agent-state.sh: .claude/agent-state.sh
     ~/.claude/.i-have-adhd-always: .claude/.i-have-adhd-always
+    ~/.claude/output-styles: .claude/output-styles
     ~/.codex/config.toml: .codex/config.toml
 
 - shell:
