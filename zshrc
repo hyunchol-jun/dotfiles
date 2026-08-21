@@ -65,6 +65,11 @@ aws-login-headless() {
     local ver="${$(aws --version 2>&1)#aws-cli/}"
     local flag="--no-browser"
     is-at-least 2.22.0 "${ver%% *}" && flag="--use-device-code"
+    # The browser that opens the link decides the account: an existing AWS
+    # session cookie silently completes the login as that user.
+    echo ">>> Open the link below in a PRIVATE/incognito window (or a browser"
+    echo ">>> profile signed in as this machine's AWS account), or you'll be"
+    echo ">>> logged in as whatever account that browser already has a session for."
     aws --profile "$profile" sso login "$flag"
 }
 
