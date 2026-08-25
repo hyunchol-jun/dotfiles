@@ -26,3 +26,4 @@
 
 - shell:
     - [git submodule update --init --recursive, Installing submodules]
+    - [sh scripts/codex-appserver-setup.sh, Codex app-server agent (minis only)]

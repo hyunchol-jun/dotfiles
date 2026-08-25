@@ -18,22 +18,20 @@ mini1              # mosh + tmux as usual
 cxr                # codex --remote ws://127.0.0.1:4500
 ```
 
-## One-time setup per mini
+## Setup per mini
 
-```
-cd ~/dotfiles && git pull && ./install
-which codex        # expect ~/.local/bin/codex; if not, fix the path in the plist
-ln -sf ~/dotfiles/launchd/com.codex.appserver.plist ~/Library/LaunchAgents/
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.codex.appserver.plist
-```
+`cd ~/dotfiles && git pull && ./install`
 
-If `bootstrap` rejects the symlink (some macOS versions do), copy instead:
-`cp ~/dotfiles/launchd/com.codex.appserver.plist ~/Library/LaunchAgents/`
-and re-copy after editing the plist.
+That's it: `scripts/codex-appserver-setup.sh` runs as a Dotbot shell step,
+links the plist into `~/Library/LaunchAgents`, and bootstraps (or restarts)
+the agent. It no-ops on hosts not named `mini1*`/`mini2*`, so the server
+never runs on other machines. Re-running `./install` after a plist edit
+restarts the server with the new config.
 
-The plist is deliberately NOT in install.conf.yaml — launchd auto-starts
-anything in `~/Library/LaunchAgents` at login, and the server should run
-only on the minis, not on every machine that runs Dotbot.
+Codex is expected at `~/.local/bin/codex` (the plist resolves it via
+`$HOME`). If `bootstrap` rejects the symlink (some macOS versions do), copy
+instead: `cp ~/dotfiles/launchd/com.codex.appserver.plist
+~/Library/LaunchAgents/` and re-copy after editing the plist.
 
 ## Troubleshooting
 
