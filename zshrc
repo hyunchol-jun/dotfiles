@@ -120,7 +120,9 @@ alias mini2ssh='_remote_ssh josephjun@100.119.210.87'
 # Codex TUI attached to the local codex app-server (computer use works there,
 # unlike a plain `codex` session). Run ON a mini, inside its tmux; the server
 # is kept alive by launchd (~/dotfiles/launchd/com.codex.appserver.plist).
-alias cxr='codex --remote ws://127.0.0.1:4500'
+# --yolo matches cx/cc; append -m <model> or -c model_reasoning_effort=<level>
+# per-invocation to override the config default.
+alias cxr='codex --remote ws://127.0.0.1:4500 --yolo'
 
 # forward ports from mini1 so its dev servers open in this machine's browser
 # usage: mini1fwd [thisport:mini1port | port ...]   (default 3000) — ctrl-c to stop
