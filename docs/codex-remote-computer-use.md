@@ -22,7 +22,7 @@ cxr                # codex --remote ws://127.0.0.1:4500
 
 ```
 cd ~/dotfiles && git pull && ./install
-which codex        # expect /opt/homebrew/bin/codex; if not, fix the path in the plist
+which codex        # expect ~/.local/bin/codex; if not, fix the path in the plist
 ln -sf ~/dotfiles/launchd/com.codex.appserver.plist ~/Library/LaunchAgents/
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.codex.appserver.plist
 ```

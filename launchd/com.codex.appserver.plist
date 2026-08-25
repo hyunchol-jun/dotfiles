@@ -6,10 +6,9 @@
 	<string>com.codex.appserver</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>/opt/homebrew/bin/codex</string>
-		<string>app-server</string>
-		<string>--listen</string>
-		<string>ws://127.0.0.1:4500</string>
+		<string>/bin/sh</string>
+		<string>-c</string>
+		<string>exec "$HOME/.local/bin/codex" app-server --listen ws://127.0.0.1:4500</string>
 	</array>
 	<key>EnvironmentVariables</key>
 	<dict>
