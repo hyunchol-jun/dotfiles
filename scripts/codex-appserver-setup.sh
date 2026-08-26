@@ -1,12 +1,10 @@
 #!/bin/sh
-# Install + start the codex app-server launchd agent, minis only.
+# Install + start the codex app-server launchd agent.
 # Idempotent: safe to re-run on every `./install`.
 # See docs/codex-remote-computer-use.md
 
-case "$(hostname)" in
-  mini1*|mini2*) ;;
-  *) exit 0 ;;  # not a mini: the app-server should not run here
-esac
+# Skip machines without codex installed (plist expects it at ~/.local/bin/codex)
+[ -x "$HOME/.local/bin/codex" ] || exit 0
 
 PLIST_SRC="$HOME/dotfiles/launchd/com.codex.appserver.plist"
 PLIST_DST="$HOME/Library/LaunchAgents/com.codex.appserver.plist"
