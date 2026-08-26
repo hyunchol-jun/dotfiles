@@ -125,11 +125,14 @@ alias mini2ssh='_remote_ssh josephjun@100.119.210.87'
 alias cxr='codex --remote ws://127.0.0.1:4500 --yolo'
 
 # forward ports from mini1 so its dev servers open in this machine's browser
-# usage: mini1fwd [thisport:mini1port | port ...]   (default 3000) — ctrl-c to stop
+# usage: mini1fwd [thisport:mini1port | port ...]   — ctrl-c to stop
+#   default: 3000 3001 3002 (implentio-app ui / app-v3 / api-v2 — the browser
+#   calls the api at localhost:3002, so Cognito login breaks without it)
 #   mini1fwd 3000            → localhost:3000 here → mini1's 3000
 #   mini1fwd 4000:3000 8080  → localhost:4000 here → mini1's 3000, plus 8080 → 8080
 mini1fwd() {
-  local specs=("${@:-3000}") fwd=() local_p remote_p
+  local specs=("$@") fwd=() local_p remote_p
+  (( ${#specs[@]} )) || specs=(3000 3001 3002)
   for s in "${specs[@]}"; do
     local_p="${s%%:*}"; remote_p="${s##*:}"
     fwd+=(-L "${local_p}:localhost:${remote_p}")
@@ -142,7 +145,8 @@ mini1fwd() {
 
 # same as mini1fwd, for mini2
 mini2fwd() {
-  local specs=("${@:-3000}") fwd=() local_p remote_p
+  local specs=("$@") fwd=() local_p remote_p
+  (( ${#specs[@]} )) || specs=(3000 3001 3002)
   for s in "${specs[@]}"; do
     local_p="${s%%:*}"; remote_p="${s##*:}"
     fwd+=(-L "${local_p}:localhost:${remote_p}")
