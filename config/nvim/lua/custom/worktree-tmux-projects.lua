@@ -32,7 +32,8 @@ return {
     shared_session_name = 'implentio-worktrees',
     auto_open_nvim = true,
     nvim_command = 'nvim',
-    nvim_startup_command = { ':!pnpm i', ':!cd packages/implentio-app/ && pnpm i' },
+    -- pnpm i is deferred: run it only when starting local servers (see repo Taskfile)
+    seed_direnv_from_main = true,
     copy_from_main = {
     },
     symlink_from_main = {

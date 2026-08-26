@@ -28,6 +28,11 @@ M.config = {
   default_merge_strategy = 'merge', -- 'merge', 'rebase', or 'squash'
   auto_delete_branch = true,        -- delete branch after successful merge
   merge_target_branch = nil,        -- nil = auto-detect via git symbolic-ref refs/remotes/origin/HEAD
+  -- Symlink the main worktree's .direnv cache into new worktrees and freshen
+  -- its timestamps so nix-direnv reuses the cached dev shell instead of
+  -- re-evaluating Nix from scratch (valid as long as the branch doesn't
+  -- change flake.nix / flake.lock)
+  seed_direnv_from_main = false,
   -- tmux mode: 'session' (default, each worktree gets its own session) or
   --            'window' (all worktrees as windows in a shared session)
   tmux_mode = 'session',
@@ -516,6 +521,29 @@ local function symlink_from_main(path, config)
   end
 end
 
+local function seed_direnv_from_main(path, config)
+  if not config.seed_direnv_from_main then
+    return
+  end
+  local main_path = resolve_main_path(path)
+  if not main_path then return end
+  local src = main_path .. '/.direnv'
+  if vim.fn.isdirectory(src) == 0 then return end
+  local dst = path .. '/.direnv'
+  local ok, out = tmux_command(string.format('ln -sfn %s %s',
+    vim.fn.shellescape(src), vim.fn.shellescape(dst)))
+  if not ok then
+    vim.notify('Failed to seed .direnv: ' .. out, vim.log.levels.WARN)
+    return
+  end
+  -- nix-direnv treats the cached profile as stale when any watched file
+  -- (flake.nix, flake.lock, .envrc) is newer than the profile rc, and the
+  -- fresh checkout stamps those with the current time — so bump the rc last
+  for _, rc in ipairs(vim.fn.glob(dst .. '/*.rc', true, true)) do
+    tmux_command(string.format('touch %s', vim.fn.shellescape(rc)))
+  end
+end
+
 -- Public functions
 function M.create_worktree()
   vim.ui.input({ prompt = 'Branch name: ' }, function(branch_name)
@@ -572,6 +600,7 @@ function M.create_worktree()
       -- Copy/symlink files from main worktree if configured
       copy_from_main(path, config)
       symlink_from_main(path, config)
+      seed_direnv_from_main(path, config)
 
       dispatch_tmux(branch_name, path, config)
     end)
