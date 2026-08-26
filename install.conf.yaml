@@ -11,6 +11,7 @@
     ~/.tmux.conf: tmux.conf
     ~/.zshrc: zshrc
     ~/.agents: .agents
+    ~/bin/dev-up: bin/dev-up
     ~/.claude/commands: .claude/commands
     ~/.claude/skills: .agents/skills
     ~/.claude/workflows: .claude/workflows

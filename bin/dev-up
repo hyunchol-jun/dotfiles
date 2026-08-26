@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+# dev-up — start the Implentio stack local dev environment in one command.
+#
+# Usage: dev-up <dev|prod> [app-v3|toolbelt]
+#
+# Run from inside a stack worktree (direnv env loaded). It will:
+#   1. pnpm install (root + packages/implentio-app), skipped when the
+#      pnpm-lock.yaml files haven't changed since the last install
+#   2. overlay per-environment vars (Cognito/Snowflake/...) from
+#      ~/.dev-up/profiles/<env>/api-v2.env into api-v2/.env
+#   3. open a "dev-servers" tmux window:
+#        pane 0: kube context switch + scripts/db-tunnel.sh :9001 --update-env
+#        pane 1: api-v2 `pnpm run dev` (waits for tunnel + refreshed creds)
+#        pane 2: the chosen UI's `pnpm run dev` (if one was given)
+#
+# Config + profiles live in ~/.dev-up — deliberately OUTSIDE the dotfiles
+# repo because the profile files hold real keys. Fill them in once per machine.
+
+set -euo pipefail
+
+CONFIG_DIR="$HOME/.dev-up"
+CONFIG_FILE="$CONFIG_DIR/config"
+WINDOW=dev-servers
+
+# ---------------------------------------------------------------- wait-api --
+# Internal subcommand run inside the api pane: wait until the tunnel port is
+# open AND db-tunnel's --update-env has rewritten .env (mtime newer than the
+# stamp taken before the tunnel started), then start the dev server.
+if [[ "${1:-}" == "--wait-api" ]]; then
+  stamp="$2" port="$3"
+  echo "Waiting for DB tunnel on :$port and refreshed credentials in .env ..."
+  i=0
+  until nc -z localhost "$port" 2>/dev/null && [[ .env -nt "$stamp" ]]; do
+    sleep 1
+    i=$((i + 1))
+    if ((i > 180)); then
+      echo "WARN: gave up waiting after 180s — starting anyway (check the tunnel pane)"
+      break
+    fi
+  done
+  exec pnpm run dev
+fi
+
+# ------------------------------------------------------------------- args ---
+TARGET_ENV="${1:-}"
+UI_TARGET="${2:-}"
+
+if [[ "$TARGET_ENV" != "dev" && "$TARGET_ENV" != "prod" ]]; then
+  echo "Usage: dev-up <dev|prod> [app-v3|toolbelt]" >&2
+  exit 1
+fi
+
+UI_DIR=""
+case "$UI_TARGET" in
+  "") ;;
+  app-v3)   UI_DIR="packages/implentio-app/packages/app-v3" ;;
+  toolbelt) UI_DIR="packages/implentio-app/packages/toolbelt" ;;
+  *) echo "Unknown UI target '$UI_TARGET' (expected app-v3 or toolbelt)" >&2; exit 1 ;;
+esac
+
+[[ -n "${TMUX:-}" ]] || { echo "dev-up must run inside tmux" >&2; exit 1; }
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+API_DIR="$ROOT/packages/implentio-app/packages/api-v2"
+if [[ -z "$ROOT" || ! -d "$API_DIR" ]]; then
+  echo "Run dev-up from inside a stack worktree (api-v2 not found)" >&2
+  exit 1
+fi
+
+# ----------------------------------------------------------------- config ---
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  mkdir -p "$CONFIG_DIR/profiles/dev" "$CONFIG_DIR/profiles/prod"
+  cat > "$CONFIG_FILE" <<'EOF'
+# dev-up configuration (sourced as shell). Empty INSTANCE/ROLE values fall
+# back to db-tunnel's interactive fzf pickers in the tunnel pane.
+DEV_CONTEXT=development-primary
+PROD_CONTEXT=production-primary
+DEV_INSTANCE=""      # e.g. pg-1234; pin it to skip the picker
+PROD_INSTANCE=""
+DEV_ROLE=""          # superuser | admin | reader
+PROD_ROLE=""
+NAMESPACE=implentio
+TUNNEL_PORT=9001
+EOF
+  for env in dev prod; do
+    cat > "$CONFIG_DIR/profiles/$env/api-v2.env" <<EOF
+# Vars overlaid onto api-v2/.env when running: dev-up $env
+# One KEY=VALUE per line. Lines here REPLACE the matching active line in .env
+# (commented lines in .env are left alone). Fill in the $env values you
+# currently toggle by hand:
+#COGNITO_REGION=
+#COGNITO_POOL_ID=
+#COGNITO_CLIENT_ID=
+#COGNITO_AWS_ACCESS_KEY_ID=
+#COGNITO_AWS_SECRET_ACCESS_KEY=
+#SNOWFLAKE_ACCOUNT=
+#SNOWFLAKE_USERNAME=
+#SNOWFLAKE_PASSWORD=
+#SNOWFLAKE_ROLE=
+#SNOWFLAKE_WAREHOUSE=
+#SNOWFLAKE_DATABASE=
+#SNOWFLAKE_SCHEMA=
+EOF
+  done
+  echo "First run: created $CONFIG_DIR with a config file and empty dev/prod profiles."
+  echo "Fill in $CONFIG_DIR/profiles/{dev,prod}/api-v2.env (uncomment + set values), then rerun."
+  exit 0
+fi
+
+# shellcheck disable=SC1090
+source "$CONFIG_FILE"
+
+if [[ "$TARGET_ENV" == "prod" ]]; then
+  CTX="$PROD_CONTEXT" INSTANCE="${PROD_INSTANCE:-}" ROLE="${PROD_ROLE:-}"
+  read -rp "This tunnels to PRODUCTION. Type 'prod' to continue: " confirm
+  [[ "$confirm" == "prod" ]] || { echo "Aborted." >&2; exit 1; }
+else
+  CTX="$DEV_CONTEXT" INSTANCE="${DEV_INSTANCE:-}" ROLE="${DEV_ROLE:-}"
+fi
+
+if tmux list-windows -F '#{window_name}' | grep -qx "$WINDOW"; then
+  echo "A '$WINDOW' window already exists. Close it first (killing the tunnel" >&2
+  echo "revokes its DB credentials): tmux kill-window -t $WINDOW" >&2
+  exit 1
+fi
+
+# ------------------------------------------------------------------- deps ---
+lock_hash() { md5 -q "$1" 2>/dev/null || md5sum "$1" | cut -d' ' -f1; }
+
+ensure_deps() {
+  local dir="$1" stamp want
+  stamp="$dir/node_modules/.dev-up-lock-hash"
+  want="$(lock_hash "$dir/pnpm-lock.yaml")"
+  if [[ -d "$dir/node_modules" && -f "$stamp" && "$(cat "$stamp")" == "$want" ]]; then
+    echo "deps up to date: $dir"
+  else
+    echo "installing deps: $dir"
+    (cd "$dir" && pnpm install)
+    echo "$want" > "$stamp"
+  fi
+}
+
+ensure_deps "$ROOT"
+ensure_deps "$ROOT/packages/implentio-app"
+
+# ---------------------------------------------------------------- profile ---
+PROFILE="$CONFIG_DIR/profiles/$TARGET_ENV/api-v2.env"
+if [[ -f "$PROFILE" ]] && grep -qE '^[A-Za-z_]' "$PROFILE"; then
+  python3 - "$PROFILE" "$API_DIR/.env" <<'PY'
+import re, sys
+src, dst = sys.argv[1], sys.argv[2]
+over = {}
+for line in open(src).read().splitlines():
+    line = line.strip()
+    if not line or line.startswith('#') or '=' not in line:
+        continue
+    over[line.split('=', 1)[0]] = line
+lines, seen = open(dst).read().splitlines(), set()
+out = []
+for line in lines:
+    m = re.match(r'([A-Za-z_][A-Za-z0-9_]*)=', line)
+    if m and m.group(1) in over:
+        out.append(over[m.group(1)])
+        seen.add(m.group(1))
+    else:
+        out.append(line)
+out += [v for k, v in over.items() if k not in seen]
+open(dst, 'w').write('\n'.join(out) + '\n')
+print(f"profile: applied {len(over)} var(s) from {src}")
+PY
+else
+  echo "profile: $PROFILE is empty — leaving api-v2/.env untouched"
+fi
+
+# ------------------------------------------------------------------- tmux ---
+STAMP="$(mktemp "${TMPDIR:-/tmp}/dev-up-stamp.XXXXXX")"
+
+TUNNEL_CMD="kubectl config use-context $CTX && ./scripts/db-tunnel.sh -n $NAMESPACE -l $TUNNEL_PORT --update-env"
+[[ -n "$INSTANCE" ]] && TUNNEL_CMD+=" -i $INSTANCE"
+[[ -n "$ROLE" ]] && TUNNEL_CMD+=" -r $ROLE"
+
+tmux new-window -n "$WINDOW" -c "$ROOT"
+tmux split-window -h -t "$WINDOW" -c "$API_DIR"
+if [[ -n "$UI_DIR" ]]; then
+  tmux split-window -v -t "$WINDOW.1" -c "$ROOT/$UI_DIR"
+fi
+
+tmux send-keys -t "$WINDOW.0" "$TUNNEL_CMD" C-m
+tmux send-keys -t "$WINDOW.1" "dev-up --wait-api $STAMP $TUNNEL_PORT" C-m
+if [[ -n "$UI_DIR" ]]; then
+  tmux send-keys -t "$WINDOW.2" "pnpm run dev" C-m
+fi
+tmux select-pane -t "$WINDOW.0"
