@@ -1,9 +1,32 @@
 project_doc_fallback_filenames = ["CLAUDE.md"]
 
+notify = ["bash", "/Users/hyuncholjun/.codex/notify.sh"]
+
 [projects."/Users/hyuncholjun/dotfiles"]
 trust_level = "trusted"
 
 [projects."/Users/hyuncholjun"]
+trust_level = "trusted"
+
+[projects."/private/tmp/claude-501/-Users-hyuncholjun/9e06039b-e74b-4515-ad49-5cbcd5641b03/scratchpad/smoke"]
+trust_level = "trusted"
+
+[projects."/private/tmp/claude-501/-Users-hyuncholjun/9e06039b-e74b-4515-ad49-5cbcd5641b03/scratchpad/smoke2"]
+trust_level = "trusted"
+
+[projects."/Users/hyuncholjun/Implentio"]
+trust_level = "trusted"
+
+[projects."/Users/hyuncholjun/Documents/Codex/2026-08-25/do-x20"]
+trust_level = "trusted"
+
+[projects."/Users/hyuncholjun/Documents/Codex/2026-08-25/computer-plugin-computer-use-openai-bundled"]
+trust_level = "trusted"
+
+[projects."/Users/hyuncholjun/Documents/Codex/2026-08-25/are"]
+trust_level = "trusted"
+
+[projects."/Users/hyuncholjun/Implentio/stack/main"]
 trust_level = "trusted"
 
 [tui]
@@ -11,3 +34,84 @@ status_line = ["model-with-reasoning", "context-remaining", "used-tokens", "five
 
 [tui.model_availability_nux]
 "gpt-5.6-sol" = 4
+
+[marketplaces.openai-bundled]
+source_type = "local"
+source = "/Users/hyuncholjun/.codex/.tmp/bundled-marketplaces/openai-bundled"
+
+[marketplaces.openai-primary-runtime]
+source_type = "local"
+source = "/Users/hyuncholjun/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
+
+[plugins."codex-app-tools@openai-bundled"]
+enabled = true
+
+[plugins."sites@openai-bundled"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."visualize@openai-bundled"]
+enabled = true
+
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."pdf@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."template-creator@openai-primary-runtime"]
+enabled = true
+
+[plugins."computer-use@openai-bundled"]
+enabled = true
+
+[plugins."chrome@openai-bundled"]
+enabled = true
+
+[features]
+js_repl = false
+
+[mcp_servers.node_repl]
+args = []
+command = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node_repl"
+startup_timeout_sec = 120
+
+[mcp_servers.node_repl.env]
+NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+NODE_REPL_NODE_MODULE_DIRS = "/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"
+NODE_REPL_NODE_PATH = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node"
+NODE_REPL_TRUSTED_CODE_PATHS = "/Users/hyuncholjun/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"
+CODEX_HOME = "/Users/hyuncholjun/.codex"
+BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
+BROWSER_USE_TINYSKY_ENABLED = "0"
+NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
+NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
+NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = "Control desktop apps on macOS through Computer Use."
+BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
+BROWSER_USE_CODEX_APP_VERSION = "26.818.61809"
+NODE_REPL_TRUSTED_SERVICES = '{"browser":"/Users/hyuncholjun/.codex/plugins/cache/openai-bundled/browser/26.818.61809/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
+SKY_CUA_SERVICE_PATH = "/Users/hyuncholjun/.codex/computer-use/Codex Computer Use.app"
+CODEX_CLI_PATH = "/Applications/ChatGPT.app/Contents/Resources/codex"
+
+[mcp_servers.computer-use]
+command = "./Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient"
+args = ["mcp"]
+cwd = "."
+enabled = false
+
+[desktop]
+followUpQueueMode = "queue"
+
+[desktop.open-in-target-preferences]
+global = "ghostty"
+
+[desktop.open-in-target-preferences.perPath]
+"/Users/hyuncholjun/Implentio/stack/main" = "ghostty"

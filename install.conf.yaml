@@ -23,6 +23,7 @@
     ~/.claude/.i-have-adhd-always: .claude/.i-have-adhd-always
     ~/.claude/output-styles: .claude/output-styles
     ~/.codex/config.toml: .codex/config.toml
+    ~/.codex/notify.sh: .codex/notify.sh
 
 - shell:
     - [git submodule update --init --recursive, Installing submodules]
