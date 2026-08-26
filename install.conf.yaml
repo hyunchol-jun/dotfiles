@@ -24,7 +24,9 @@
     ~/.claude/output-styles: .claude/output-styles
     ~/.codex/config.toml: .codex/config.toml
     ~/.codex/notify.sh: .codex/notify.sh
+    ~/.codex/AGENTS.md: .codex/AGENTS.md
 
 - shell:
     - [git submodule update --init --recursive, Installing submodules]
     - [sh scripts/codex-appserver-setup.sh, Codex app-server agent (minis only)]
+    - [sh scripts/link-codex-skills.sh, Linking agent skills into Codex]
