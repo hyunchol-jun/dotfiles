@@ -48,8 +48,19 @@ fi
 # ------------------------------------------------------------------- args ---
 TARGET_ENV="${1:-}"
 
+# Tear everything down: killing the window HUPs every pane; the tunnel
+# script's EXIT trap still runs (verified), revoking the DB credentials.
+if [[ "$TARGET_ENV" == "down" ]]; then
+  if tmux kill-window -t "$WINDOW" 2>/dev/null; then
+    echo "Killed '$WINDOW' window (servers stopped, tunnel closed, DB credentials revoked)."
+  else
+    echo "No '$WINDOW' window found — nothing to tear down."
+  fi
+  exit 0
+fi
+
 if [[ "$TARGET_ENV" != "dev" && "$TARGET_ENV" != "prod" ]]; then
-  echo "Usage: dev-up <dev|prod> [app-v3] [toolbelt]" >&2
+  echo "Usage: dev-up <dev|prod> [app-v3] [toolbelt]   |   dev-up down" >&2
   exit 1
 fi
 shift
