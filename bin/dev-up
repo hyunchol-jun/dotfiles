@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # dev-up — start the Implentio stack local dev environment in one command.
 #
-# Usage: dev-up <dev|prod> [app-v3|toolbelt]
+# Usage: dev-up <dev|prod> [app-v3] [toolbelt]   (any number of UI targets)
 #
 # Run from inside a stack worktree (direnv env loaded). It will:
 #   1. pnpm install (root + packages/implentio-app), skipped when the
@@ -47,20 +47,21 @@ fi
 
 # ------------------------------------------------------------------- args ---
 TARGET_ENV="${1:-}"
-UI_TARGET="${2:-}"
 
 if [[ "$TARGET_ENV" != "dev" && "$TARGET_ENV" != "prod" ]]; then
-  echo "Usage: dev-up <dev|prod> [app-v3|toolbelt]" >&2
+  echo "Usage: dev-up <dev|prod> [app-v3] [toolbelt]" >&2
   exit 1
 fi
+shift
 
-UI_DIR=""
-case "$UI_TARGET" in
-  "") ;;
-  app-v3)   UI_DIR="packages/implentio-app/packages/app-v3" ;;
-  toolbelt) UI_DIR="packages/implentio-app/packages/toolbelt" ;;
-  *) echo "Unknown UI target '$UI_TARGET' (expected app-v3 or toolbelt)" >&2; exit 1 ;;
-esac
+UI_DIRS=()
+for target in "$@"; do
+  case "$target" in
+    app-v3)   UI_DIRS+=("packages/implentio-app/packages/app-v3") ;;
+    toolbelt) UI_DIRS+=("packages/implentio-app/packages/toolbelt") ;;
+    *) echo "Unknown UI target '$target' (expected app-v3 or toolbelt)" >&2; exit 1 ;;
+  esac
+done
 
 [[ -n "${TMUX:-}" ]] || { echo "dev-up must run inside tmux" >&2; exit 1; }
 
@@ -183,10 +184,13 @@ if nc -z localhost "$TUNNEL_PORT" 2>/dev/null; then
 
   tmux new-window -n "$WINDOW" -c "$API_DIR"
   tmux send-keys -t "$WINDOW.0" "pnpm run dev" C-m
-  if [[ -n "$UI_DIR" ]]; then
-    tmux split-window -h -t "$WINDOW" -c "$ROOT/$UI_DIR"
-    tmux send-keys -t "$WINDOW.1" "pnpm run dev" C-m
-  fi
+  pane=0
+  # ${arr[@]+...} guard: empty-array expansion errors under set -u on bash 3.2
+  for dir in ${UI_DIRS[@]+"${UI_DIRS[@]}"}; do
+    tmux split-window -h -t "$WINDOW.$pane" -c "$ROOT/$dir"
+    pane=$((pane + 1))
+    tmux send-keys -t "$WINDOW.$pane" "pnpm run dev" C-m
+  done
   tmux select-pane -t "$WINDOW.0"
 else
   STAMP="$(mktemp "${TMPDIR:-/tmp}/dev-up-stamp.XXXXXX")"
@@ -197,14 +201,13 @@ else
 
   tmux new-window -n "$WINDOW" -c "$ROOT"
   tmux split-window -h -t "$WINDOW" -c "$API_DIR"
-  if [[ -n "$UI_DIR" ]]; then
-    tmux split-window -v -t "$WINDOW.1" -c "$ROOT/$UI_DIR"
-  fi
-
   tmux send-keys -t "$WINDOW.0" "$TUNNEL_CMD" C-m
   tmux send-keys -t "$WINDOW.1" "dev-up --wait-api $STAMP $TUNNEL_PORT" C-m
-  if [[ -n "$UI_DIR" ]]; then
-    tmux send-keys -t "$WINDOW.2" "pnpm run dev" C-m
-  fi
+  pane=1
+  for dir in ${UI_DIRS[@]+"${UI_DIRS[@]}"}; do
+    tmux split-window -v -t "$WINDOW.$pane" -c "$ROOT/$dir"
+    pane=$((pane + 1))
+    tmux send-keys -t "$WINDOW.$pane" "pnpm run dev" C-m
+  done
   tmux select-pane -t "$WINDOW.0"
 fi
