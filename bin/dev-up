@@ -9,7 +9,9 @@
 #   2. overlay per-environment vars (Cognito/Snowflake/...) from
 #      ~/.dev-up/profiles/<env>/api-v2.env into api-v2/.env
 #   3. open a "dev-servers" tmux window:
-#        pane 0: kube context switch + scripts/db-tunnel.sh :9001 --update-env
+#        pane 0: kube context switch + implentio-custom-db-tunnel.sh :9001
+#                (the script behind the dbt-rw/dbt-r aliases: auto-selects the
+#                implentio DB, writes DB URLs into the .env files, tunnels)
 #        pane 1: api-v2 `pnpm run dev` (waits for tunnel + refreshed creds)
 #        pane 2: the chosen UI's `pnpm run dev` (if one was given)
 #
@@ -71,15 +73,11 @@ fi
 if [[ ! -f "$CONFIG_FILE" ]]; then
   mkdir -p "$CONFIG_DIR/profiles/dev" "$CONFIG_DIR/profiles/prod"
   cat > "$CONFIG_FILE" <<'EOF'
-# dev-up configuration (sourced as shell). Empty INSTANCE/ROLE values fall
-# back to db-tunnel's interactive fzf pickers in the tunnel pane.
+# dev-up configuration (sourced as shell).
 DEV_CONTEXT=development-primary
 PROD_CONTEXT=production-primary
-DEV_INSTANCE=""      # e.g. pg-1234; pin it to skip the picker
-PROD_INSTANCE=""
-DEV_ROLE=""          # superuser | admin | reader
-PROD_ROLE=""
-NAMESPACE=implentio
+DEV_ROLE=Superuser   # Superuser | Admin | Reader (dbt-rw uses Superuser, dbt-r Reader)
+PROD_ROLE=Superuser
 TUNNEL_PORT=9001
 EOF
   for env in dev prod; do
@@ -111,11 +109,11 @@ fi
 source "$CONFIG_FILE"
 
 if [[ "$TARGET_ENV" == "prod" ]]; then
-  CTX="$PROD_CONTEXT" INSTANCE="${PROD_INSTANCE:-}" ROLE="${PROD_ROLE:-}"
+  CTX="$PROD_CONTEXT" ROLE="${PROD_ROLE:-Superuser}"
   read -rp "This tunnels to PRODUCTION. Type 'prod' to continue: " confirm
   [[ "$confirm" == "prod" ]] || { echo "Aborted." >&2; exit 1; }
 else
-  CTX="$DEV_CONTEXT" INSTANCE="${DEV_INSTANCE:-}" ROLE="${DEV_ROLE:-}"
+  CTX="$DEV_CONTEXT" ROLE="${DEV_ROLE:-Superuser}"
 fi
 
 if tmux list-windows -F '#{window_name}' | grep -qx "$WINDOW"; then
@@ -175,9 +173,9 @@ fi
 # ------------------------------------------------------------------- tmux ---
 STAMP="$(mktemp "${TMPDIR:-/tmp}/dev-up-stamp.XXXXXX")"
 
-TUNNEL_CMD="kubectl config use-context $CTX && ./scripts/db-tunnel.sh -n $NAMESPACE -l $TUNNEL_PORT --update-env"
-[[ -n "$INSTANCE" ]] && TUNNEL_CMD+=" -i $INSTANCE"
-[[ -n "$ROLE" ]] && TUNNEL_CMD+=" -r $ROLE"
+# Same script the dbt-rw / dbt-r aliases wrap; it targets the current kube
+# context, so the context switch decides dev vs prod.
+TUNNEL_CMD="kubectl config use-context $CTX && $HOME/dotfiles/scripts/implentio-custom-db-tunnel.sh -l $TUNNEL_PORT -d app -h localhost -r $ROLE"
 
 tmux new-window -n "$WINDOW" -c "$ROOT"
 tmux split-window -h -t "$WINDOW" -c "$API_DIR"
