@@ -424,14 +424,17 @@ require('lazy').setup({
         --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
         --   },
         -- },
-        -- Search hidden (dot) files/dirs too, so things like `.scratch/` are
-        -- reachable. Ignore files (.gitignore/.ignore) are still respected, so
-        -- node_modules etc. stay out; `.ignore` with `!.scratch/` re-includes it.
+        -- Search everything: hidden (dot) files/dirs AND gitignored paths
+        -- (.scratch/, build output), except node_modules and .git/ internals.
         defaults = {
           file_ignore_patterns = { '%.git/' },
         },
         pickers = {
-          find_files = { hidden = true },
+          find_files = {
+            hidden = true,
+            no_ignore = true,
+            find_command = { 'fd', '--type', 'f', '--color', 'never', '--exclude', 'node_modules' },
+          },
           live_grep = { additional_args = { '--hidden' } },
           grep_string = { additional_args = { '--hidden' } },
         },
