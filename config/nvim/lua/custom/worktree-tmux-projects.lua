@@ -48,7 +48,6 @@ return {
     },
     custom_layout = {
       { direction = 'h', size = 50 },
-      { target_pane = 1, direction = 'v', size = 50 },
     },
     pane_commands = {
       [1] = 'cc',
