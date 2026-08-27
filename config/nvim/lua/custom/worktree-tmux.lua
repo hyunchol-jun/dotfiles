@@ -737,6 +737,36 @@ function M.delete_worktree()
           if config.auto_kill_session then
             kill_tmux_target(choice.branch, choice.path, config)
           end
+
+          -- Offer to delete the branch too, so abandoned branches don't
+          -- linger and get silently reused by a later WorktreeCreate
+          vim.ui.select({ 'Delete branch', 'Keep branch' }, {
+            prompt = string.format("Also delete branch '%s'?", choice.branch),
+          }, function(bchoice)
+            if bchoice ~= 'Delete branch' then return end
+            local ok, out = tmux_command(string.format('git branch -d %s',
+              vim.fn.shellescape(choice.branch)))
+            if ok then
+              vim.notify('Deleted branch: ' .. choice.branch)
+              return
+            end
+            -- -d refuses when the branch has unmerged commits
+            vim.ui.select({ 'Cancel', 'Force delete (-D, discards its commits)' }, {
+              prompt = string.format("Branch '%s' is not fully merged. Force delete?", choice.branch),
+            }, function(fchoice)
+              if fchoice ~= 'Force delete (-D, discards its commits)' then
+                vim.notify('Branch kept: ' .. choice.branch)
+                return
+              end
+              local fok, fout = tmux_command(string.format('git branch -D %s',
+                vim.fn.shellescape(choice.branch)))
+              if fok then
+                vim.notify('Force-deleted branch: ' .. choice.branch)
+              else
+                vim.notify('Failed to delete branch: ' .. fout, vim.log.levels.ERROR)
+              end
+            end)
+          end)
         end)
       end)
     end)
