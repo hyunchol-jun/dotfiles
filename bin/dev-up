@@ -14,6 +14,8 @@
 #                implentio DB, writes DB URLs into the .env files, tunnels)
 #        pane 1: api-v2 `pnpm run dev` (waits for tunnel + refreshed creds)
 #        pane 2: the chosen UI's `pnpm run dev` (if one was given)
+#      If port 9001 is already in use, the existing tunnel is reused: no
+#      tunnel pane, no kube context switch — just the api/UI panes.
 #
 # Config + profiles live in ~/.dev-up — deliberately OUTSIDE the dotfiles
 # repo because the profile files hold real keys. Fill them in once per machine.
@@ -171,21 +173,38 @@ else
 fi
 
 # ------------------------------------------------------------------- tmux ---
-STAMP="$(mktemp "${TMPDIR:-/tmp}/dev-up-stamp.XXXXXX")"
+if nc -z localhost "$TUNNEL_PORT" 2>/dev/null; then
+  # A tunnel is already running (started by hand or by a previous dev-up whose
+  # window was renamed/moved). Reuse it: its credentials are already in .env,
+  # so starting a second tunnel would overwrite them and then revoke them when
+  # its port bind fails. Skip the tunnel pane AND the kube context switch.
+  echo "WARN: port $TUNNEL_PORT is already in use — reusing the existing tunnel."
+  echo "      Make sure that tunnel points at '$TARGET_ENV'; dev-up is NOT switching kube context."
 
-# Same script the dbt-rw / dbt-r aliases wrap; it targets the current kube
-# context, so the context switch decides dev vs prod.
-TUNNEL_CMD="kubectl config use-context $CTX && $HOME/dotfiles/scripts/implentio-custom-db-tunnel.sh -l $TUNNEL_PORT -d app -h localhost -r $ROLE"
+  tmux new-window -n "$WINDOW" -c "$API_DIR"
+  tmux send-keys -t "$WINDOW.0" "pnpm run dev" C-m
+  if [[ -n "$UI_DIR" ]]; then
+    tmux split-window -h -t "$WINDOW" -c "$ROOT/$UI_DIR"
+    tmux send-keys -t "$WINDOW.1" "pnpm run dev" C-m
+  fi
+  tmux select-pane -t "$WINDOW.0"
+else
+  STAMP="$(mktemp "${TMPDIR:-/tmp}/dev-up-stamp.XXXXXX")"
 
-tmux new-window -n "$WINDOW" -c "$ROOT"
-tmux split-window -h -t "$WINDOW" -c "$API_DIR"
-if [[ -n "$UI_DIR" ]]; then
-  tmux split-window -v -t "$WINDOW.1" -c "$ROOT/$UI_DIR"
+  # Same script the dbt-rw / dbt-r aliases wrap; it targets the current kube
+  # context, so the context switch decides dev vs prod.
+  TUNNEL_CMD="kubectl config use-context $CTX && $HOME/dotfiles/scripts/implentio-custom-db-tunnel.sh -l $TUNNEL_PORT -d app -h localhost -r $ROLE"
+
+  tmux new-window -n "$WINDOW" -c "$ROOT"
+  tmux split-window -h -t "$WINDOW" -c "$API_DIR"
+  if [[ -n "$UI_DIR" ]]; then
+    tmux split-window -v -t "$WINDOW.1" -c "$ROOT/$UI_DIR"
+  fi
+
+  tmux send-keys -t "$WINDOW.0" "$TUNNEL_CMD" C-m
+  tmux send-keys -t "$WINDOW.1" "dev-up --wait-api $STAMP $TUNNEL_PORT" C-m
+  if [[ -n "$UI_DIR" ]]; then
+    tmux send-keys -t "$WINDOW.2" "pnpm run dev" C-m
+  fi
+  tmux select-pane -t "$WINDOW.0"
 fi
-
-tmux send-keys -t "$WINDOW.0" "$TUNNEL_CMD" C-m
-tmux send-keys -t "$WINDOW.1" "dev-up --wait-api $STAMP $TUNNEL_PORT" C-m
-if [[ -n "$UI_DIR" ]]; then
-  tmux send-keys -t "$WINDOW.2" "pnpm run dev" C-m
-fi
-tmux select-pane -t "$WINDOW.0"
