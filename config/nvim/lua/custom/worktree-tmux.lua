@@ -572,37 +572,68 @@ function M.create_worktree()
       -- Check if branch exists
       local branch_exists_cmd = string.format('git show-ref --verify --quiet refs/heads/%s', branch_name)
       local branch_exists = tmux_command(branch_exists_cmd)
-      
-      local create_cmd
+
+      local function proceed()
+        local create_cmd
+        if branch_exists then
+          -- Branch exists, just create worktree
+          create_cmd = string.format('git worktree add %s %s',
+            vim.fn.shellescape(path),
+            vim.fn.shellescape(branch_name))
+        else
+          -- Branch doesn't exist, create new branch with worktree
+          create_cmd = string.format('git worktree add -b %s %s',
+            vim.fn.shellescape(branch_name),
+            vim.fn.shellescape(path))
+        end
+
+        local success, result = tmux_command(create_cmd)
+        if not success then
+          vim.notify('Failed to create worktree: ' .. result, vim.log.levels.ERROR)
+          return
+        end
+
+        vim.notify('Created worktree: ' .. branch_name .. ' at ' .. path)
+
+        -- Handle tmux
+        local config = get_project_config(path, M.config)
+
+        -- Copy/symlink files from main worktree if configured
+        copy_from_main(path, config)
+        symlink_from_main(path, config)
+        seed_direnv_from_main(path, config)
+
+        dispatch_tmux(branch_name, path, config)
+      end
+
+      -- Reusing an existing branch silently is a footgun: a stale branch means
+      -- a stale snapshot of the whole repo. Warn when it's behind the default
+      -- branch and ask before proceeding.
       if branch_exists then
-        -- Branch exists, just create worktree
-        create_cmd = string.format('git worktree add %s %s', 
-          vim.fn.shellescape(path), 
-          vim.fn.shellescape(branch_name))
-      else
-        -- Branch doesn't exist, create new branch with worktree
-        create_cmd = string.format('git worktree add -b %s %s', 
+        local default_branch = detect_default_branch()
+        local _, behind_str = tmux_command(string.format(
+          'git rev-list --count %s..%s 2>/dev/null',
           vim.fn.shellescape(branch_name),
-          vim.fn.shellescape(path))
+          vim.fn.shellescape(default_branch)))
+        local behind = tonumber(behind_str)
+        if behind and behind > 0 then
+          vim.ui.select({ 'Reuse it anyway', 'Cancel' }, {
+            prompt = string.format(
+              "Branch '%s' already exists and is %d commit(s) behind %s. Reuse it?",
+              branch_name, behind, default_branch),
+          }, function(choice)
+            if choice == 'Reuse it anyway' then
+              proceed()
+            else
+              vim.notify('Worktree creation cancelled (pick a new branch name for current code)',
+                vim.log.levels.WARN)
+            end
+          end)
+          return
+        end
       end
-      
-      local success, result = tmux_command(create_cmd)
-      if not success then
-        vim.notify('Failed to create worktree: ' .. result, vim.log.levels.ERROR)
-        return
-      end
-      
-      vim.notify('Created worktree: ' .. branch_name .. ' at ' .. path)
 
-      -- Handle tmux
-      local config = get_project_config(path, M.config)
-
-      -- Copy/symlink files from main worktree if configured
-      copy_from_main(path, config)
-      symlink_from_main(path, config)
-      seed_direnv_from_main(path, config)
-
-      dispatch_tmux(branch_name, path, config)
+      proceed()
     end)
   end)
 end
