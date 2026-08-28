@@ -26,10 +26,12 @@ case "$(uname -s)" in
     ;;
 esac
 
-# Non-interactive shells (ssh) don't source zshrc, so put brew and
-# mise-managed tools (node/npm) on PATH explicitly
+# Non-interactive shells (ssh) don't source zshrc, so put brew,
+# mise-managed tools (node/npm), and curl-installed binaries
+# (claude, omp, codex, opencode) on PATH explicitly
 [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
 command -v mise &>/dev/null && eval "$(mise activate bash --shims)"
+export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
 
 # Dotbot symlinks
 echo "==> Running Dotbot..."
@@ -98,6 +100,14 @@ if ! command -v codex &>/dev/null; then
   curl -fsSL https://chatgpt.com/codex/install.sh | sh
 else
   echo "==> OpenAI Codex already installed"
+fi
+
+# oh-my-pi (omp)
+if ! command -v omp &>/dev/null; then
+  echo "==> Installing oh-my-pi..."
+  curl -fsSL https://omp.sh/install | sh
+else
+  echo "==> oh-my-pi already installed"
 fi
 
 # TPM (Tmux Plugin Manager)

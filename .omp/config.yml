@@ -1,0 +1,10 @@
+modelRoles:
+  default: openai-codex/gpt-5.6-sol
+tools:
+  approvalMode: yolo
+symbolPreset: nerd
+composer:
+  shape: box
+theme:
+  dark: titanium
+setupVersion: 2

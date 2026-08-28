@@ -24,6 +24,7 @@
     ~/.claude/.i-have-adhd-always: .claude/.i-have-adhd-always
     ~/.claude/output-styles: .claude/output-styles
     ~/.codex/config.toml: .codex/config.toml
+    ~/.omp/agent/config.yml: .omp/config.yml
     ~/.codex/notify.sh: .codex/notify.sh
     ~/.codex/AGENTS.md: .codex/AGENTS.md
 
