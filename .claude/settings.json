@@ -1,6 +1,8 @@
 {
   "includeCoAuthoredBy": false,
-  "outputStyle": "Direct",
+  "attribution": {
+    "sessionUrl": false
+  },
   "permissions": {
     "allow": [
       "Read(*)",
@@ -97,6 +99,7 @@
       }
     }
   },
+  "outputStyle": "Direct",
   "alwaysThinkingEnabled": true,
   "effortLevel": "medium",
   "tui": "fullscreen",
@@ -106,5 +109,10 @@
   "preferredNotifChannel": "terminal_bell",
   "autoCompactEnabled": false,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "modelSettings": {
+    "claude-fable-5": {
+      "effortLevel": "high"
+    }
+  }
 }
