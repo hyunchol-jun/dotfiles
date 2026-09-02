@@ -18,7 +18,7 @@ Facts the environment won't tell you:
 
 ## Steps
 
-1. **Guard.** The app-server runs only on mini1/mini2. Check `hostname` matches `mini1*`/`mini2*` and `nc -z 127.0.0.1 4500` succeeds. On failure, stop and tell the user; setup and troubleshooting live in `~/dotfiles/docs/codex-remote-computer-use.md`.
+1. **Guard.** The app-server is a launchd agent installed by `./install` on any Mac with `~/.local/bin/codex`. Check `nc -z 127.0.0.1 4500` succeeds. On failure, stop and tell the user to run `launchctl kickstart -k gui/$(id -u)/com.codex.appserver` (or `cd ~/dotfiles && ./install` if the agent was never installed); setup and troubleshooting live in `~/dotfiles/docs/codex-remote-computer-use.md`.
 
 2. **Collect the brief.** From the user's arguments, extract: the URL, whether the page is already open in Chrome, and the work — either **test mode** (checks with expected outcomes) or **task mode** (an action to perform with a done-condition). If the URL or the work is missing, ask once for exactly what's missing; infer the rest.
 
