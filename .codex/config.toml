@@ -1,6 +1,9 @@
 project_doc_fallback_filenames = ["CLAUDE.md"]
 
-notify = ["bash", "/Users/hyuncholjun/.codex/notify.sh"]
+
+notify = ["/Users/hyuncholjun/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
+model = "gpt-5.6-sol"
+model_reasoning_effort = "xhigh"
 
 [projects."/Users/hyuncholjun/dotfiles"]
 trust_level = "trusted"
@@ -27,6 +30,12 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/Users/hyuncholjun/Implentio/stack/main"]
+trust_level = "trusted"
+
+[projects."/Users/hyuncholjun/Documents/Codex/2026-09-04/realtime-voice-chat"]
+trust_level = "trusted"
+
+[projects."/Users/hyuncholjun/Documents/Codex/2026-09-04/realtime-voice-chat-2"]
 trust_level = "trusted"
 
 [tui]
