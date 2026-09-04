@@ -94,6 +94,24 @@ else
   echo "==> OpenCode already installed"
 fi
 
+# Claude Code settings: shared keys live in .claude/settings.seed.json and are
+# merged into the live file on every run (seed wins on shared keys). Machine-
+# specific keys the app writes (model, modelSettings, effortLevel) are kept.
+CLAUDE_CFG="$HOME/.claude/settings.json"
+CLAUDE_SEED="$DOTFILES_DIR/.claude/settings.seed.json"
+mkdir -p "$HOME/.claude"
+if [ -L "$CLAUDE_CFG" ]; then
+  echo "==> Converting Claude settings symlink to a real file..."
+  cp -L "$CLAUDE_CFG" "$CLAUDE_CFG.tmp" && mv -f "$CLAUDE_CFG.tmp" "$CLAUDE_CFG"
+fi
+if [ ! -e "$CLAUDE_CFG" ]; then
+  echo "==> Seeding Claude settings..."
+  cp "$CLAUDE_SEED" "$CLAUDE_CFG"
+else
+  echo "==> Merging shared Claude settings..."
+  jq -s '.[0] * .[1]' "$CLAUDE_CFG" "$CLAUDE_SEED" > "$CLAUDE_CFG.tmp" && mv -f "$CLAUDE_CFG.tmp" "$CLAUDE_CFG"
+fi
+
 # OpenAI Codex
 if ! command -v codex &>/dev/null; then
   echo "==> Installing OpenAI Codex..."

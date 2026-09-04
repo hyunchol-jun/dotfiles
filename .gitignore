@@ -18,3 +18,6 @@ config/gh/
 
 # Codex app rewrites this with machine-specific state; seeded from .codex/config.seed.toml
 .codex/config.toml
+
+# Claude Code rewrites model/effort per machine; shared keys merged in from .claude/settings.seed.json by bootstrap
+.claude/settings.json

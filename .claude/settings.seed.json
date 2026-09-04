@@ -20,7 +20,6 @@
     "deny": [],
     "defaultMode": "auto"
   },
-  "model": "fable[1m]",
   "hooks": {
     "Notification": [
       {
@@ -101,12 +100,6 @@
   },
   "outputStyle": "Direct",
   "alwaysThinkingEnabled": true,
-  "effortLevel": "medium",
-  "modelSettings": {
-    "claude-fable-5": {
-      "effortLevel": "high"
-    }
-  },
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "theme": "dark",
