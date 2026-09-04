@@ -5,6 +5,13 @@ DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "==> Detected dotfiles directory: $DOTFILES_DIR"
 
+# Non-interactive shells (ssh) don't source zshrc, so put brew,
+# mise-managed tools (node/npm), and curl-installed binaries
+# (claude, omp, codex, opencode) on PATH explicitly
+[ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
+command -v mise &>/dev/null && eval "$(mise activate bash --shims)"
+export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
+
 # Platform-specific setup
 case "$(uname -s)" in
   Darwin)
@@ -25,13 +32,6 @@ case "$(uname -s)" in
     exit 1
     ;;
 esac
-
-# Non-interactive shells (ssh) don't source zshrc, so put brew,
-# mise-managed tools (node/npm), and curl-installed binaries
-# (claude, omp, codex, opencode) on PATH explicitly
-[ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
-command -v mise &>/dev/null && eval "$(mise activate bash --shims)"
-export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
 
 # Dotbot symlinks
 echo "==> Running Dotbot..."
