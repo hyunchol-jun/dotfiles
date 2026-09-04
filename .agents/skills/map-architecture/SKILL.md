@@ -21,14 +21,14 @@ Flags may appear anywhere; strip each one you honor. Remaining text is a focus h
 | `--out <dir>` | `docs-local/architecture` | output directory, relative to the repo toplevel |
 | `--full` | off | ignore an existing map and re-survey everything |
 | `--rounds <n>` | `1` | adversarial review rounds |
-| `--diagram <fmt>` | `excalidraw` | `excalidraw` (bundled script) or `tldraw` (invoke that skill) |
+| `--diagram <fmt>` | `excalidraw` | one or more of `excalidraw`, `tldraw`, `html`, comma-separated (e.g. `--diagram excalidraw,html`). `excalidraw` and `html` use bundled scripts; `tldraw` invokes that skill |
 | `--gpt-model <m>` | `openai-codex/gpt-5.6-sol` | passed as `omp --model <m>` |
 | `--gpt-effort <e>` | `xhigh` | passed as `omp --thinking <e>` |
 | `--gpt-runner <r>` | `omp` | `omp` or `codex` (fallback when omp is not logged in) |
 
 Announce the resolved config in one line: `mode: full|incremental · out: <dir> · rounds: N · diagram: <fmt> · gpt: <runner> <model> @ <effort>`.
 
-`SKILL_DIR` is this skill's base directory (announced when the skill loaded). Scripts: `$SKILL_DIR/scripts/{assemble.py,changed_units.py,gen_excalidraw.py}`. Briefs: `SURVEY-BRIEF.md`, `REVIEWER-BRIEF.md`.
+`SKILL_DIR` is this skill's base directory (announced when the skill loaded). Scripts: `$SKILL_DIR/scripts/{assemble.py,changed_units.py,gen_excalidraw.py,gen_html.py}`. Briefs: `SURVEY-BRIEF.md`, `REVIEWER-BRIEF.md`.
 
 ## Pre-flight
 
@@ -89,11 +89,15 @@ Re-run assemble. Spot-check the three named rulings yourself with `grep -n` at t
 
 ## Phase 4 — Diagram
 
-`excalidraw`: `python3 $SKILL_DIR/scripts/gen_excalidraw.py $OUT/ARCHITECTURE.md $OUT/architecture.excalidraw && python3 -m json.tool $OUT/architecture.excalidraw > /dev/null`. `tldraw`: invoke that skill with the §6 Mermaid block as input, write `$OUT/architecture.tldr`.
+Produce every format named in `--diagram`:
+
+- `excalidraw`: `python3 $SKILL_DIR/scripts/gen_excalidraw.py $OUT/ARCHITECTURE.md $OUT/architecture.excalidraw && python3 -m json.tool $OUT/architecture.excalidraw > /dev/null`.
+- `tldraw`: invoke that skill with the §6 Mermaid block as input, write `$OUT/architecture.tldr`.
+- `html`: `python3 $SKILL_DIR/scripts/gen_html.py $OUT/ARCHITECTURE.md $OUT/architecture.html`. One self-contained page: the §6 diagram drawn by mermaid.js (loaded from jsDelivr, so viewing needs network) with the §2–§5 tables beneath it. Open with `open $OUT/architecture.html`.
 
 ## Report
 
-- Paths: the map, the diagram, `reviews/`.
+- Paths: the map, each diagram file produced, `reviews/`.
 - Mode, units re-surveyed (incremental), subsystem and edge counts; per round, findings raised / accepted / rejected per reviewer; the three spot-checked rulings and whether you overturned any.
 - §7 open questions, in full — these are what the user must decide.
 - Whether `$OUT` is tracked by git.
