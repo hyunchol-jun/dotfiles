@@ -2,6 +2,8 @@
 node = "lts"
 java = "zulu-21"
 python = "3"
+"npm:@ai-hero/sandcastle" = "latest"
+"npm:@fission-ai/openspec" = "latest"
 
 [settings]
 auto_install = true

@@ -9,3 +9,5 @@ theme:
   dark: titanium
 setupVersion: 2
 defaultThinkingLevel: xhigh
+dev:
+  autoqaConsent: granted

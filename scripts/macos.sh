@@ -40,6 +40,18 @@ else
   fi
 fi
 
+# Keep selected formulae on the latest release (Brewfile runs with --no-upgrade,
+# so installed packages are never bumped otherwise)
+UPGRADE_FORMULAE=(neovim)
+brew update --quiet
+outdated=$(brew outdated --quiet "${UPGRADE_FORMULAE[@]}" 2>/dev/null || true)
+if [[ -n "$outdated" ]]; then
+  echo "==> Upgrading: $outdated"
+  brew upgrade "${UPGRADE_FORMULAE[@]}"
+else
+  echo "==> ${UPGRADE_FORMULAE[*]} already up to date"
+fi
+
 # Ghostty terminfo (needed for tmux)
 if ! infocmp xterm-ghostty &>/dev/null; then
   echo "==> Installing Ghostty terminfo..."
