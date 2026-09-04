@@ -108,7 +108,7 @@ CODEX_CFG="$HOME/.codex/config.toml"
 mkdir -p "$HOME/.codex"
 if [ -L "$CODEX_CFG" ]; then
   echo "==> Converting Codex config symlink to a real file..."
-  cp -L "$CODEX_CFG" "$CODEX_CFG.tmp" && mv "$CODEX_CFG.tmp" "$CODEX_CFG"
+  cp -L "$CODEX_CFG" "$CODEX_CFG.tmp" && mv -f "$CODEX_CFG.tmp" "$CODEX_CFG"
 elif [ ! -e "$CODEX_CFG" ]; then
   echo "==> Seeding Codex config..."
   cp "$DOTFILES_DIR/.codex/config.seed.toml" "$CODEX_CFG"
