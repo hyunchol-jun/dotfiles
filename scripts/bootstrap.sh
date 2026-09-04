@@ -102,6 +102,20 @@ else
   echo "==> OpenAI Codex already installed"
 fi
 
+# Codex config: seed once, then the app owns the file. Older setups symlinked
+# it into the repo; replace that symlink with a real copy so pulls never conflict.
+CODEX_CFG="$HOME/.codex/config.toml"
+mkdir -p "$HOME/.codex"
+if [ -L "$CODEX_CFG" ]; then
+  echo "==> Converting Codex config symlink to a real file..."
+  cp -L "$CODEX_CFG" "$CODEX_CFG.tmp" && mv "$CODEX_CFG.tmp" "$CODEX_CFG"
+elif [ ! -e "$CODEX_CFG" ]; then
+  echo "==> Seeding Codex config..."
+  cp "$DOTFILES_DIR/.codex/config.seed.toml" "$CODEX_CFG"
+else
+  echo "==> Codex config already present"
+fi
+
 # oh-my-pi (omp)
 if ! command -v omp &>/dev/null; then
   echo "==> Installing oh-my-pi..."

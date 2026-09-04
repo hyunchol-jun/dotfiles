@@ -15,3 +15,6 @@ github-copilot/
 config/rclone/
 config/kis-hoga/
 config/gh/
+
+# Codex app rewrites this with machine-specific state; seeded from .codex/config.seed.toml
+.codex/config.toml

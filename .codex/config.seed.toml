@@ -1,0 +1,6 @@
+# First-run defaults for ~/.codex/config.toml. Copied by scripts/bootstrap.sh
+# only when that file does not exist. The Codex app then owns the file and
+# rewrites it with machine-specific paths and state, so it is not tracked.
+project_doc_fallback_filenames = ["CLAUDE.md"]
+model = "gpt-5.6-sol"
+model_reasoning_effort = "xhigh"
