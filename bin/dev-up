@@ -2,6 +2,7 @@
 # dev-up — start the Implentio stack local dev environment in one command.
 #
 # Usage: dev-up <dev|prod> [app-v3] [toolbelt]   (any number of UI targets)
+#        dev-up down                            (stop everything, revoke DB creds)
 #
 # Run from inside a stack worktree (direnv env loaded). It will:
 #   1. pnpm install (root + packages/implentio-app), skipped when the
@@ -48,15 +49,95 @@ fi
 # ------------------------------------------------------------------- args ---
 TARGET_ENV="${1:-}"
 
-# Tear everything down: killing the window HUPs every pane; the tunnel
-# script's EXIT trap still runs (verified), revoking the DB credentials.
+# Tear everything down.
+#
+# `tmux kill-window` on its own is NOT enough (learned the hard way). It only
+# SIGHUPs the panes, and:
+#   * autossh (what pf-tunnel runs) treats SIGHUP as "reconnect", so the tunnel
+#     keeper survives, orphaned, and re-opens the port a moment later;
+#   * the HUP reaches the tunnel script's process group twice (shell + kernel),
+#     killing the `claude`/`vault` commands its EXIT trap spawns before they
+#     finish, so the Vault lease and the pg-tunnel MCP entry are left behind.
+# So: SIGTERM the tunnel script first and wait for it (its trap revokes the
+# lease, removes the MCP entry and kills autossh), sweep anything still bound
+# to the port, revoke any lease an earlier unclean teardown left recorded, and
+# only then kill the window.
 if [[ "$TARGET_ENV" == "down" ]]; then
-  if tmux kill-window -t "$WINDOW" 2>/dev/null; then
-    echo "Killed '$WINDOW' window (servers stopped, tunnel closed, DB credentials revoked)."
-  else
-    echo "No '$WINDOW' window found — nothing to tear down."
+  # shellcheck disable=SC1090
+  [[ -f "$CONFIG_FILE" ]] && source "$CONFIG_FILE"
+  port="${TUNNEL_PORT:-9001}"
+  script_pat="implentio-custom-db-tunnel\.sh .*-l $port( |\$)"
+  keeper_pat="127\.0\.0\.1:$port:"
+  status=0
+
+  # 1. Ask the tunnel script(s) on this port to shut down cleanly.
+  pids="$(pgrep -f "$script_pat" || true)"
+  if [[ -n "$pids" ]]; then
+    echo "Stopping DB tunnel script (pid ${pids//$'\n'/ }): revoking credentials, removing MCP entry ..."
+    # shellcheck disable=SC2086
+    kill -TERM $pids 2>/dev/null || true
+    for _ in $(seq 1 30); do
+      pgrep -f "$script_pat" >/dev/null || break
+      sleep 1
+    done
+    if pgrep -f "$script_pat" >/dev/null; then
+      echo "WARN: tunnel script still running after 30s; killing it (credentials may NOT be revoked)" >&2
+      # shellcheck disable=SC2086
+      kill -KILL $pids 2>/dev/null || true
+      status=1
+    else
+      echo "Tunnel script exited cleanly."
+    fi
   fi
-  exit 0
+
+  # 2. Sweep: any keeper still forwarding the port (orphaned autossh/ssh from an
+  #    earlier teardown, or a tunnel started by hand).
+  pids="$(pgrep -f "$keeper_pat" || true)"
+  if [[ -n "$pids" ]]; then
+    echo "Killing leftover tunnel keeper(s) on :$port (pid ${pids//$'\n'/ })"
+    # shellcheck disable=SC2086
+    kill -TERM $pids 2>/dev/null || true
+    for _ in $(seq 1 10); do
+      nc -z localhost "$port" 2>/dev/null || break
+      sleep 1
+    done
+  fi
+  if nc -z localhost "$port" 2>/dev/null; then
+    echo "WARN: something is still listening on :$port:" >&2
+    lsof -nP -iTCP:"$port" -sTCP:LISTEN >&2 || true
+    status=1
+  fi
+
+  # 3. A lease file left behind means an earlier tunnel died without revoking.
+  lease_file="${XDG_STATE_HOME:-$HOME/.local/state}/implentio-db-tunnel/$port.lease"
+  if [[ -f "$lease_file" ]]; then
+    # shellcheck disable=SC1090
+    source "$lease_file"
+    echo "Found un-revoked DB credentials from an earlier tunnel (lease ${LEASE_ID:-?})."
+    if [[ -n "${LEASE_ID:-}" && -n "${VAULT_ADDR:-}" ]] \
+      && command -v vault >/dev/null && command -v pf-get-vault-token >/dev/null; then
+      export VAULT_ADDR
+      if VAULT_TOKEN="$(pf-get-vault-token)" vault lease revoke "$LEASE_ID"; then
+        rm -f "$lease_file"
+        echo "Revoked."
+      else
+        echo "WARN: revoke failed; details kept in $lease_file" >&2
+        status=1
+      fi
+    else
+      echo "Cannot revoke from here (needs vault + pf-get-vault-token from the stack devshell). Run:" >&2
+      echo "  VAULT_ADDR=${VAULT_ADDR:-?} vault lease revoke ${LEASE_ID:-?} && rm $lease_file" >&2
+      status=1
+    fi
+  fi
+
+  # 4. Now the window (api/UI dev servers) can go.
+  if tmux kill-window -t "$WINDOW" 2>/dev/null; then
+    echo "Killed '$WINDOW' window (dev servers stopped)."
+  else
+    echo "No '$WINDOW' window found."
+  fi
+  exit $status
 fi
 
 if [[ "$TARGET_ENV" != "dev" && "$TARGET_ENV" != "prod" ]]; then

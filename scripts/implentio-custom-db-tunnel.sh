@@ -11,21 +11,51 @@
 
 set -eo pipefail
 
+# Where the Vault lease of a running tunnel is recorded (keyed by local port),
+# so a caller such as `dev-up down` can still revoke it if this process dies
+# without running its cleanup. Removed again once the lease is revoked.
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/implentio-db-tunnel"
+STATE_FILE=""
+TUNNEL_PID=""
+LEASE_ID=""
+
 # Use this trap to ensure that database credentials are only
-# valid while the tunnel is active
+# valid while the tunnel is active.
+#
+# To stop the tunnel cleanly from outside, send this script SIGTERM (or SIGINT)
+# and wait for it to exit. Do NOT rely on the terminal going away (for example
+# `tmux kill-window`): that delivers SIGHUP to the whole process group twice
+# (once from the shell, once from the kernel), which kills the `claude` and
+# `vault` children this handler spawns before they finish -- and autossh treats
+# SIGHUP as "reconnect", so the tunnel itself survives, orphaned.
 handle_exit() {
+  set +e # never abort half-way through cleanup (e.g. an echo to a dead tty)
+
+  # Stop the tunnel. pf-tunnel is a thin bash wrapper around autossh and does
+  # not forward signals, so kill autossh (and its ssh) explicitly by port.
+  [[ -n $TUNNEL_PID ]] && kill "$TUNNEL_PID" 2>/dev/null
+  [[ -n $LOCAL_PORT ]] && pkill -TERM -f "127\.0\.0\.1:${LOCAL_PORT}:" 2>/dev/null
+
   # Remove MCP server configuration
   if command -v claude &> /dev/null; then
     echo "Removing MCP server configuration..." >&2
-    claude mcp remove -s user pg-tunnel 2>/dev/null || true
+    claude mcp remove -s user pg-tunnel >/dev/null 2>&1
   fi
 
   if [[ -n $LEASE_ID ]]; then
     echo "Tunnel terminated. Revoking database credentials..." >&2
-    vault lease revoke "$LEASE_ID"
+    if vault lease revoke "$LEASE_ID"; then
+      [[ -n $STATE_FILE ]] && rm -f "$STATE_FILE"
+    else
+      echo "WARNING: could not revoke lease $LEASE_ID. Details kept in $STATE_FILE; revoke by hand with:" >&2
+      echo "  VAULT_ADDR=$VAULT_ADDR vault lease revoke $LEASE_ID" >&2
+    fi
   fi
 }
 trap 'handle_exit' EXIT
+# Turn termination signals into a normal exit so the EXIT trap above runs.
+trap 'exit 130' INT
+trap 'exit 143' TERM HUP
 
 ####################################################################
 # Step 0: Error checking
@@ -251,7 +281,22 @@ if [[ ! $LOCAL_PORT =~ ^[0-9]+$ ]] || ((LOCAL_PORT < 1024 || LOCAL_PORT > 65535)
 fi
 
 ####################################################################
-# Step 8: Pick a local port
+# Step 7b: Record the lease so it can be revoked even if we die uncleanly
+####################################################################
+mkdir -p "$STATE_DIR"
+STATE_FILE="$STATE_DIR/$LOCAL_PORT.lease"
+touch "$STATE_FILE" && chmod 600 "$STATE_FILE"
+cat >"$STATE_FILE" <<EOF
+LEASE_ID=$LEASE_ID
+VAULT_ADDR=$VAULT_ADDR
+KUBE_CONTEXT=$KUBE_CONTEXT
+LOCAL_PORT=$LOCAL_PORT
+STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+TUNNEL_SCRIPT_PID=$$
+EOF
+
+####################################################################
+# Step 8: Build the connection URL
 ####################################################################
 DBURL="postgresql://$USERNAME:$PASSWORD@$HOST:$LOCAL_PORT/$DBNAME"
 echo "" >&2
