@@ -106,6 +106,7 @@
   "editorMode": "vim",
   "preferredNotifChannel": "terminal_bell",
   "autoCompactEnabled": false,
+  "autoCompactWindow": 200000,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true
 }
