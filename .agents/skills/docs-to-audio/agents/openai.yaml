@@ -1,0 +1,4 @@
+interface:
+  display_name: "Docs to Audio"
+  short_description: "Turn documentation into guided or faithful audio"
+  default_prompt: "Use $docs-to-audio to turn this documentation into a guided spoken explanation with chapter audio and a narration script."

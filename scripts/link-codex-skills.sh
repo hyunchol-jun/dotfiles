@@ -15,7 +15,7 @@ diagnosing-bugs research tdd domain-modeling codebase-design code-review \
 resolving-merge-conflicts wizard grill-me handoff teach to-questionnaire \
 wait-what grilling writing-for-agents implement-tickets scaffold-exercises \
 migrate-to-shoehorn setup-pre-commit setup-ts-deep-modules find-skills \
-tdd-review-issues tdd-review-loop"
+tdd-review-issues tdd-review-loop docs-to-audio"
 
 for s in $SKILLS; do
   if [ -e "$DST/$s" ]; then
