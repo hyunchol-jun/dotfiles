@@ -25,13 +25,17 @@ Choose an output folder alongside the document or in the user's requested artifa
 
 Paths are relative to the manifest. Each script should include its spoken chapter heading.
 
-On macOS, use the bundled local renderer when no voice provider was requested. It requires `say`, `ffmpeg`, and `ffprobe`, and uses the system voice unless `--voice` is provided. Run `say -v '?'` to find an installed voice matching the narration language. Local speech synthesis does not upload scripts; script preparation still occurs in the current assistant session.
+Use **local Kokoro** for English narration by default. Read [Kokoro setup and voices](references/kokoro.md) for first-time setup, voice choices, and supported language scope. The renderer requires `ffmpeg` and `ffprobe` plus the isolated Kokoro runtime. Speech synthesis runs locally without uploading scripts; script preparation still occurs in the current assistant session.
 
 ```bash
-python3 <skill-dir>/scripts/render_audio.py <output-dir>/chapters.json --out <output-dir>/audio --rate 175
+"$HOME/.local/share/docs-to-audio/venv/bin/python" <skill-dir>/scripts/render_audio.py <output-dir>/chapters.json --out <output-dir>/audio
 ```
 
-Use a new audio output directory for rerenders. If a dependency is missing, identify it and use an available suitable backend; do not claim that a script alone is finished audio. For requested cloud voices or non-macOS environments, read [Cloud narration](references/cloud.md). Preserve existing provider authorization and preferences.
+Default voice: `af_heart` (American English), speed 1.0. Respect explicit voice choices. Use `--voice am_michael` for an American male alternative, or `--lang en-gb --voice bf_emma` for British English. Generate a short sample before a long render when the user is choosing a voice.
+
+For an explicitly requested Mac voice, use `--backend say --voice "Ava (Premium)" --rate 175` after checking `say -v '?'` for availability. The Mac backend uses any Python 3 and needs no Kokoro install. For non-English source material, preserve the language and select a matching installed Mac voice or a requested cloud provider; this Kokoro integration supports English only.
+
+Use a new audio output directory for rerenders. If a dependency is missing, identify it and run the setup where authorized; do not silently change to a different speech engine. For requested cloud voices, read [Cloud narration](references/cloud.md). Preserve existing provider authorization and preferences.
 
 ## Verify and deliver
 
