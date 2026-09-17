@@ -18,7 +18,6 @@
     ~/.claude/statusline-command.sh: .claude/statusline-command.sh
     ~/.claude/CLAUDE.md: .claude/CLAUDE.md
     ~/.claude/ntfy-notify.sh: .claude/ntfy-notify.sh
-    ~/.claude/tts-notify.sh: .claude/tts-notify.sh
     ~/.claude/agent-state.sh: .claude/agent-state.sh
     ~/.claude/.i-have-adhd-always: .claude/.i-have-adhd-always
     ~/.claude/output-styles: .claude/output-styles

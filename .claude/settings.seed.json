@@ -42,10 +42,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/tts-notify.sh"
-          },
-          {
-            "type": "command",
             "command": "bash ~/.claude/agent-state.sh done"
           }
         ]

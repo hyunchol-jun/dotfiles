@@ -60,7 +60,7 @@ agree, on every machine.
 
 ### 3. Hook wiring: `.claude/settings.json`
 
-Append to existing arrays — the current ntfy (`Notification`) and tts (`Stop`)
+Append to existing arrays — the current ntfy (`Notification`)
 hooks stay untouched; Claude Code runs all hooks for an event:
 
 - `Notification` → `bash ~/.claude/agent-state.sh input`
