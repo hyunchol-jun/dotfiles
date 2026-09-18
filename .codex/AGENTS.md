@@ -1,5 +1,7 @@
 # Global Codex instructions
 
+Obsidian vault path: ~/Library/Mobile Documents/iCloud~md~obsidian/Documents/vimwiki
+
 ## Agent skills — Implentio stack repo only
 
 Applies only when working under `~/Implentio/stack` (any worktree). Config for
