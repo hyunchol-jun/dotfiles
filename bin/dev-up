@@ -236,6 +236,23 @@ ensure_deps() {
 ensure_deps "$ROOT"
 ensure_deps "$ROOT/packages/implentio-app"
 
+# api-v2 pulls these workspace packages in as file: copies, snapshotted at
+# install time — so build them first, then re-install to pick up dist/.
+ensure_local_pkgs() {
+  local app="$ROOT/packages/implentio-app" pkg rebuilt=0
+  for pkg in cdm-mapping-contract scheduling; do
+    [[ -f "$app/packages/$pkg/dist/index.cjs" ]] && continue
+    echo "building local package: $pkg"
+    (cd "$app" && pnpm --filter="@implentio/$pkg" run build)
+    rebuilt=1
+  done
+  if [[ "$rebuilt" == 1 ]]; then
+    echo "re-installing api-v2 deps to pick up built packages"
+    (cd "$app/packages/api-v2" && pnpm install --offline)
+  fi
+}
+ensure_local_pkgs
+
 # ---------------------------------------------------------------- profile ---
 PROFILE="$CONFIG_DIR/profiles/$TARGET_ENV/api-v2.env"
 if [[ -f "$PROFILE" ]] && grep -qE '^[A-Za-z_]' "$PROFILE"; then
