@@ -21,3 +21,6 @@ config/gh/
 
 # Claude Code rewrites model/effort per machine; shared keys merged in from .claude/settings.seed.json by bootstrap
 .claude/settings.json
+
+# Claude Code writes its claude.ai synced-skills cache here (via ~/.claude/skills -> .agents/skills)
+.agents/skills/synced/
