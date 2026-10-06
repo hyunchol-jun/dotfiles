@@ -17,7 +17,7 @@ This will:
 2. Run Dotbot to symlink config files
 3. Install runtimes via mise (Node, Java, Python)
 4. Install npm global packages (typescript, prettier, pnpm, tsx)
-5. Install Claude Code and OpenCode if missing
+5. Install Claude Code if missing
 6. Clone TPM (Tmux Plugin Manager) if missing
 
 ## Runtime Management (mise)

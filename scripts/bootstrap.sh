@@ -7,10 +7,10 @@ echo "==> Detected dotfiles directory: $DOTFILES_DIR"
 
 # Non-interactive shells (ssh) don't source zshrc, so put brew,
 # mise-managed tools (node/npm), and curl-installed binaries
-# (claude, omp, codex, opencode) on PATH explicitly
+# (claude, omp, codex) on PATH explicitly
 [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
 command -v mise &>/dev/null && eval "$(mise activate bash --shims)"
-export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 
 # Platform-specific setup
 case "$(uname -s)" in
@@ -85,14 +85,6 @@ echo "==> Configuring Claude Code MCP servers..."
 claude mcp add context7 --scope user -- npx -y @upstash/context7-mcp@latest || true
 # TODO: Add Exa MCP server once API key is set up
 # claude mcp add exa --scope user -e EXA_API_KEY=your-key-here -- npx -y exa-mcp-server@latest
-
-# OpenCode
-if ! command -v opencode &>/dev/null; then
-  echo "==> Installing OpenCode..."
-  curl -fsSL https://opencode.ai/install | bash
-else
-  echo "==> OpenCode already installed"
-fi
 
 # Claude Code settings: shared keys live in .claude/settings.seed.json and are
 # merged into the live file on every run (seed wins on shared keys). Machine-

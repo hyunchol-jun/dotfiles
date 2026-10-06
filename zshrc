@@ -43,7 +43,6 @@ alias ccfm="claude --dangerously-skip-permissions --model fable --effort medium"
 alias ccox="claude --dangerously-skip-permissions --model opus --effort xhigh"
 alias ccom="claude --dangerously-skip-permissions --model opus --effort max"
 alias cx="codex --yolo"
-alias oc="opencode"
 alias omp6x="omp --model openai-codex/gpt-6-astra --thinking xhigh"
 alias omp6m="omp --model openai-codex/gpt-6-astra --thinking medium"
 
@@ -251,9 +250,6 @@ if [[ -f "$BREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 elif [[ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
   source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 fi
-
-# opencode
-export PATH=$HOME/.opencode/bin:$PATH
 
 # OpenRouter key for the walkthrough-video TTS skill.
 # Read from the git-ignored stack .env rather than hardcoded — this repo is pushed to GitHub.
