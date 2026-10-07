@@ -242,6 +242,8 @@ ensure_local_pkgs() {
   local app="$ROOT/packages/implentio-app" pkg rebuilt=0
   for pkg in cdm-mapping-contract scheduling; do
     [[ -f "$app/packages/$pkg/dist/index.cjs" ]] && continue
+    # the root lock-hash stamp cannot tell when a nested node_modules was wiped
+    [[ -d "$app/packages/$pkg/node_modules" ]] || (cd "$app" && pnpm install --filter="@implentio/$pkg")
     echo "building local package: $pkg"
     (cd "$app" && pnpm --filter="@implentio/$pkg" run build)
     rebuilt=1
