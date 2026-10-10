@@ -3,8 +3,8 @@
 Date: 2026-10-10. Owner: Joseph. Mod lives at `~/.claude/mods/hive` (not in the stack repo).
 Baseline: `claude plugin validate . && claude plugin test .` green on Claude Code 2.1.296.
 
-Order: **S (share-ready) first**, then **E (env tint)**, then **B (brand pane)**. S is an hour and
-fixes the shape E and B are built into. E forces the poll loop + process plumbing that B needs.
+Status 2026-10-10: S done and committed. E built then removed (restorable). B dropped. Roadmap empty.
+Only candidate with teeth: a `tool.call` guard refusing prod writes, which would need E's probe back.
 
 ---
 
@@ -91,7 +91,14 @@ Effort: an afternoon.
 
 ---
 
-## B. Brand context pane + injection — `/brand <slug|id>`
+## B. Brand context pane — DROPPED 2026-10-10
+
+apiaryOs already exposes every fact B would show (`brand_get`, `brand_flag_summary`,
+`workflow_latest_for_brand`, `credit_memo_list`, `invoice_lifecycle_list`, `db_query`), one call each
+in a hive session. Plain sessions have the `implentio-db` skill. A pane re-fetching the same over a
+tunnel is a worse copy. Original design kept below for reference.
+
+### Original design
 
 ### Why
 Every brand investigation re-derives the same facts: storeType, flags, last recon, lake sync lag,
