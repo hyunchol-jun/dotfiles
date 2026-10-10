@@ -123,8 +123,27 @@ alias mini2ssh='_remote_ssh josephjun@100.119.210.87'
 # unlike a plain `codex` session). Run ON a mini, inside its tmux; the server
 # is kept alive by launchd (~/dotfiles/launchd/com.codex.appserver.plist).
 # --yolo matches cx/cc; append -m <model> or -c model_reasoning_effort=<level>
-# per-invocation to override the config default.
-alias cxr='codex --remote ws://127.0.0.1:4500 --yolo'
+# per-invocation to override the config default. `cxr --update` updates Codex
+# and restarts the long-running server so it uses the new release.
+unalias cxr 2>/dev/null
+cxr() {
+  if [[ "${1:-}" == "--update" ]]; then
+    shift
+    if (( $# )); then
+      echo "usage: cxr --update" >&2
+      return 2
+    fi
+
+    command codex update || return
+    local cxr_uid
+    cxr_uid="$(id -u)" || return
+    launchctl kickstart -k "gui/${cxr_uid}/com.codex.appserver" || return
+    echo "Codex updated and app server restarted. Start a new cxr session."
+    return
+  fi
+
+  command codex --remote ws://127.0.0.1:4500 --yolo "$@"
+}
 
 # forward ports from mini1 so its dev servers open in this machine's browser
 # usage: mini1fwd [thisport:mini1port | port ...]   — ctrl-c to stop
@@ -259,3 +278,9 @@ if [[ -f "$__or_env" ]]; then
   [[ -n "$__or_line" ]] && export "$__or_line"
 fi
 unset __or_env __or_line
+
+# ---- hive: apiaryOs-enabled Claude Code sessions (see ~/.claude/mods/hive/README.md) ----
+# `hive` (bin/hive) = apiaryOs live + capture on, tinted. Plain `claude` loads the same mod so it
+# can refuse apiaryOs tools and pin the capture kill switch; one line, same in bash and zsh.
+claude() { APIARY_CAPTURE_DISABLED=1 command claude --plugin-dir ~/.claude/mods/hive "$@"; }
+export PATH="$HOME/.claude/mods/hive/bin:$PATH"

@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# hive: launch Claude Code with apiaryOs live and transcript capture ON, visibly.
+# Plain `claude` (no wrapper) is the off state: the hive mod pins APIARY_CAPTURE_DISABLED=1 and
+# refuses apiaryOs tools. Only this launcher sets it to 0, so the two can never disagree.
+set -u
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+mod="$(dirname "$here")"
+mcp="$mod/apiaryos.mcp.json"
+
+# Terminal tint is best-effort and cosmetic: the in-app band is the real signal. tmux pane if
+# inside tmux, else OSC 11 (Ghostty, kitty, WezTerm, foot, iTerm2; ignored by Terminal.app).
+pane=""
+tint_on() {
+  if [ -n "${TMUX:-}" ] && command -v tmux > /dev/null 2>&1; then
+    pane="$(tmux display -p '#{pane_id}' 2> /dev/null || true)"
+    [ -n "$pane" ] && tmux select-pane -t "$pane" -P 'bg=#2a1f00,fg=#f3e7c3' 2> /dev/null
+    tmux rename-window '🐝 HIVE' 2> /dev/null
+  else
+    printf '\033]11;#2a1f00\a\033]0;🐝 HIVE\a' 2> /dev/null
+  fi
+}
+tint_off() {
+  if [ -n "${TMUX:-}" ] && command -v tmux > /dev/null 2>&1; then
+    [ -n "$pane" ] && tmux select-pane -t "$pane" -P 'bg=default,fg=default' 2> /dev/null
+    tmux set-window-option automatic-rename on 2> /dev/null
+  else
+    printf '\033]111;\a\033]0;\a' 2> /dev/null
+  fi
+}
+
+if [ ! -f "$mcp" ]; then
+  echo "hive: missing $mcp" >&2
+  exit 1
+fi
+
+tint_on
+trap tint_off EXIT
+exec_rc=0
+APIARY_CAPTURE_DISABLED=0 claude --plugin-dir "$mod" --mcp-config "$mcp" "$@" || exec_rc=$?
+exit "$exec_rc"

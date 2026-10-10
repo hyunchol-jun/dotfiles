@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "apiaryos": {
+      "type": "http",
+      "url": "https://mcp.prod.implentio.net/mcp",
+      "oauth": { "callbackPort": 3118 }
+    }
+  }
+}
