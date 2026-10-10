@@ -12,18 +12,6 @@ A Claude Code mod plus a launcher. Two kinds of session, decided at launch, no i
 
 `/hive` in either session says which one you are in.
 
-## Environment row (both kinds of session)
-A second band row says which far end your local connections reach, re-probed every 15s:
-
-`⛔ PROD · DB production :51003 · kube production-primary · trino :40080 ✓ · api :9001 ✓ → prod`
-
-Red if anything is production, green if only development, grey if nothing is open. The same facts
-go into the model's context as a `hive-env` block, so it stops assuming dev (or prod). `/env` prints
-them with the time of the last probe. Signals: `/tmp/implentio-db-<env>.env` written by the stack
-repo's `connect-implentio-db` skill (only its `PORT` line is read), `kubectl config current-context`,
-and a bash `/dev/tcp` probe of the Trino and api-v2 forward ports. Edit `hive.config.json` to change
-paths, ports, or the words that mean prod/dev. The mod never opens a tunnel, only detects one.
-
 ## Why the env var, not the deny
 apiary-capture uploads a session as soon as any apiaryOs `tool_use` lands in the transcript, and a
 denied call still leaves that block there. So the deny is a belt; `APIARY_CAPTURE_DISABLED` is the

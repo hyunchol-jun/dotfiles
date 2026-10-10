@@ -1,6 +1,5 @@
 {
   "name": "hive",
-  "version": "0.2.0",
-  "description": "Makes an apiaryOs-enabled (HIVE) session unmistakable, keeps apiaryOs tools out of a plain session, and shows which environment (prod/dev) your local tunnels point at. State is fixed at launch from APIARY_CAPTURE_DISABLED.",
-  "types": "./types/index.d.ts"
+  "version": "0.1.1",
+  "description": "Makes an apiaryOs-enabled (HIVE) session unmistakable, and keeps apiaryOs tools out of a plain session. State is fixed at launch from APIARY_CAPTURE_DISABLED."
 }

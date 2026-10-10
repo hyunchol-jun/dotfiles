@@ -1,8 +1,0 @@
-{
-  "tunnelEnvDir": "/tmp",
-  "tunnelEnvPrefix": "implentio-db-",
-  "prodWords": ["production", "prod"],
-  "devWords": ["development", "dev"],
-  "ports": { "trino": 40080, "api": 9001 },
-  "pollMs": 15000
-}

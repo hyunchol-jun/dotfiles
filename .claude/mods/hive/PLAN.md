@@ -43,7 +43,11 @@ that runs `./install` gets it. Not its own git repo.
 
 ---
 
-## E. Environment tint — "which far end am I talking to?" — DONE 2026-10-10 (tests + validate; not yet seen live)
+## E. Environment tint — BUILT then REMOVED 2026-10-10 (restorable: dotfiles commit 62d07f5)
+
+Removed because it only mirrors state and enforces nothing; the user judged the benefit too small
+without the `tool.call` guard (E2) or B using the verdict. Re-apply with `git revert` of the removal
+commit or cherry-pick 62d07f5 if either lands.
 
 ### Why
 `.env` tunnel targets flip-flop between PROD and DEV (memory: local-apiv2-points-at-prod).
