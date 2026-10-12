@@ -1,10 +1,11 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register, TurnUsage } from 'claude-code'
+import type { EngineInterface, Register, TurnStepInput, TurnUsage } from 'claude-code'
 
 import type { CacheLastStep, CacheWindow } from '../types'
 
 const TICK_MS = 10_000
 const MISS_BAND_MS = 3 * 60_000
+const SHORT_TTL_MS = 5 * 60_000
 
 const window = atom({ plugin: 'cache-clock', key: 'window' } as const, null)
 const last = atom({ plugin: 'cache-clock', key: 'last' } as const, null)
@@ -15,12 +16,14 @@ const num = (v: unknown, fallback: number) =>
 const mmss = (ms: number) => {
   const s = Math.max(0, Math.round(ms / 1000))
   const m = Math.floor(s / 60)
+  if (m > 60) return `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}m`
   return m >= 10 ? `${m}m` : `${m}m${String(s % 60).padStart(2, '0')}s`
 }
 
 const bar = (fraction: number, cells = 12) => {
   const lit = Math.max(0, Math.min(cells, Math.round(fraction * cells)))
-  return '▮'.repeat(lit) + '▯'.repeat(cells - lit)
+  // Block Elements render in every monospace font; ▮▯ fell back to tofu boxes.
+  return '█'.repeat(lit) + '░'.repeat(cells - lit)
 }
 
 
@@ -55,17 +58,45 @@ async function refresh($: EngineInterface, cfg: Config) {
   if (now - w.now >= TICK_MS - 500) await update($, window, cur => (cur ? { ...cur, now } : cur))
 }
 
-async function note($: EngineInterface, cfg: Config, usage: TurnUsage, at: number, previous: CacheWindow | null) {
+// Why this request has no warm prefix to read, or undefined when it should have one.
+function coldReason(cfg: Config, e: TurnStepInput, at: number, previous: CacheWindow | null) {
+  if (previous === null) return 'first request'
+  if (at - previous.startedAt >= cfg.ttlMs) return 'TTL lapsed'
+  if (previous.rewritten) return 'compaction'
+  if (previous.model !== undefined && previous.model !== e.model) return 'model switch'
+  if (previous.effort !== e.effort) return 'effort switch'
+  return undefined
+}
+
+async function note(
+  $: EngineInterface,
+  cfg: Config,
+  usage: TurnUsage,
+  at: number,
+  previous: CacheWindow | null,
+  prevStep: CacheLastStep | null,
+  reason: string | undefined,
+) {
   const { ttlMs, missTokens } = cfg
   const read_ = usage.cache_read_input_tokens
   const written = usage.cache_creation_input_tokens
-  const isMiss = written >= missTokens && read_ < written
-  const step: CacheLastStep = { at, isMiss, read: read_, written, uncached: usage.input_tokens, model: usage.model }
+  // A miss is the cache failing to serve the prefix the last request left; a big paste on a small context reads all of it.
+  const served = prevStep ? prevStep.read + prevStep.written : written
+  const isFullWrite = written >= missTokens && read_ < served / 2
+  const isColdWrite = isFullWrite && reason !== undefined
+  const isMiss = isFullWrite && reason === undefined
+  const step: CacheLastStep = {
+    at, isMiss, isColdWrite, ...(isColdWrite ? { coldReason: reason } : {}),
+    read: read_, written, uncached: usage.input_tokens, model: usage.model,
+  }
   await update($, last, () => step)
-  // A miss while the window should still have been warm means the TTL is not what we assume.
-  const wasExpected = previous === null || at - previous.startedAt >= ttlMs
-  if (isMiss && !wasExpected) {
-    $.ui.toast(`Cache MISS with ${mmss(ttlMs - (at - previous.startedAt))} left on the clock: TTL may have dropped to 5m. Rewrote ${Math.round(written / 1000)}k tokens.`, { timeoutMs: 10_000 })
+  if (isMiss && previous) {
+    const elapsed = at - previous.startedAt
+    // Under 5m no TTL explains it, so the prefix itself changed.
+    const why = elapsed < SHORT_TTL_MS
+      ? 'the prompt prefix changed (CLAUDE.md, MCP tools or system prompt)'
+      : 'the TTL may have dropped to 5m, or the prompt prefix changed'
+    $.ui.toast(`Cache MISS ${mmss(elapsed)} after the last request, ${mmss(ttlMs - elapsed)} left on the clock: ${why}. Rewrote ${Math.round(written / 1000)}k tokens.`, { timeoutMs: 10_000 })
   }
 }
 
@@ -88,11 +119,29 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  on('session.end', ($, e, next) => {
-    tick?.cancel()
-    tick = null
+  on('session.end', async ($, e, next) => {
+    // /clear and an in-session /resume go on in the same process with no session.start, so the clock keeps ticking.
+    if (e.reason === 'clear' || e.reason === 'resume') {
+      await update($, window, () => null)
+      await update($, last, () => null)
+    } else {
+      tick?.cancel()
+      tick = null
+    }
     $.ui.status(undefined)
     return next(e)
+  })
+
+  on('session.compact', async ($, e, next) => {
+    const result = await next(e)
+    // precompute installs nothing; the compaction that later uses it lands here again.
+    if (e.agentId === undefined && e.trigger !== 'precompute' && result.messages !== undefined) {
+      // Never let bookkeeping fail the compaction the engine already made.
+      try {
+        await update($, window, cur => (cur ? { ...cur, rewritten: true } : cur))
+      } catch { /* the next full write reads as a miss, nothing worse */ }
+    }
+    return result
   })
 
   on('turn.step', async function* ($, e, next) {
@@ -100,12 +149,18 @@ export const register: Register = (on, options) => {
     const isMain = e.agentId === undefined
     const startedAt = await $.clock.now()
     const previous = isMain ? await read($, window) : null
-    if (isMain) await update($, window, () => ({ startedAt, now: startedAt }))
+    const prevStep = isMain ? await read($, last) : null
+    const reason = coldReason(cfg, e, startedAt, previous)
+    if (isMain) {
+      await update($, window, () => ({
+        startedAt, now: startedAt, model: e.model, ...(e.effort !== undefined ? { effort: e.effort } : {}),
+      }))
+    }
 
     const stream = next(e)
     for await (const chunk of stream) {
       if (isMain && chunk.kind === 'stop' && chunk.usage) {
-        await note($, cfg, chunk.usage, startedAt, previous)
+        await note($, cfg, chunk.usage, startedAt, previous, prevStep, reason)
       }
       yield chunk
     }
@@ -125,8 +180,9 @@ export const register: Register = (on, options) => {
         : `Cache cold: TTL passed ${mmss(-remaining)} ago. The next request rewrites the whole context at 2× input price.`,
     ]
     if (l) {
+      const kind = l.isMiss ? 'MISS' : l.isColdWrite ? `cold write (expected: ${l.coldReason ?? 'first request'})` : 'hit'
       lines.push(
-        `Last request: ${l.isMiss ? 'MISS' : 'hit'} · read ${l.read.toLocaleString()} · wrote ${l.written.toLocaleString()} · uncached ${l.uncached.toLocaleString()} · ${l.model}`,
+        `Last request: ${kind} · read ${l.read.toLocaleString()} · wrote ${l.written.toLocaleString()} · uncached ${l.uncached.toLocaleString()} · ${l.model}`,
       )
     }
     return { text: lines.join('\n') }
@@ -148,9 +204,8 @@ export const register: Register = (on, options) => {
       <Box flexDirection="column">
         {showWarn ? (
           <Text color={color}>
-            {bar(remaining / ttlMs)}{' '}
             {remaining > 0
-              ? `cache lapses in ${mmss(remaining)} · any prompt resets the window`
+              ? `${bar(remaining / ttlMs)} cache lapses in ${mmss(remaining)} · any prompt resets the window`
               : `cache COLD · next request pays a full context rewrite`}
           </Text>
         ) : null}
