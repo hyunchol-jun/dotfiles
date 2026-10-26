@@ -31,11 +31,11 @@ Facts the environment won't tell you:
    tmux send-keys -t "$WIN" 'cxr "$(cat '"$RUN"'/prompt.md)"' Enter
    ```
 
-   If not inside tmux, add `-t "$(tmux list-sessions -F '#S' | head -1)"` to `new-window`. Tell the user the session is running in tmux window `cxr` and where the run dir is.
+   If not inside tmux, add `-t "$(tmux list-sessions -F '#S' | head -1)"` to `new-window`. About 20s later, `tmux capture-pane -p -t "$WIN" | tail -20` to confirm Codex is working — a model rejection (`invalid_request_error`, `model_not_found`) shows up there and never produces a findings file; if you see one, stop and point the user at the `-m` pin in `~/dotfiles/zshrc`. Tell the user the session is running in tmux window `cxr` and where the run dir is.
 
-5. **Wait and report.** Run in the background: `timeout 1800 sh -c 'until [ -f '"$RUN"'/findings.md ]; do sleep 10; done'`. When it exits:
-   - Findings exist → read the file and report, verdict first, then the per-check or end-state detail. Done when the user has the verdict and the findings.
-   - Timeout → report that the session is still running in window `cxr`, and that findings will appear at `$RUN/findings.md`. Done.
+5. **Wait and report.** Run in the background, with `$RUN` spelled out absolute (shell state doesn't carry over, and macOS has no `timeout`): `i=0; until [ -f $RUN/findings.md ] || [ $i -ge 180 ]; do sleep 10; i=$((i+1)); done; [ -f $RUN/findings.md ] && echo FOUND || echo TIMEOUT`. When it exits:
+   - `FOUND` → read the file and report, verdict first, then the per-check or end-state detail. Done when the user has the verdict and the findings.
+   - `TIMEOUT` → report that the session is still running in window `cxr`, and that findings will appear at `$RUN/findings.md`. Done.
 
 ## Brief template
 
