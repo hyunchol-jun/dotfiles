@@ -126,9 +126,12 @@ alias mini2ssh='_remote_ssh josephjun@100.119.210.87'
 # per-invocation to override the config default. `cxr --update` updates Codex
 # and restarts the long-running server so it uses the new release.
 # -m is pinned here, not in ~/.codex/config.toml, because the Codex app owns
-# that file and rewrites model= (it set gpt-6-astra, which no released CLI
-# accepts -> every cxr run 400s). Bump this when a newer model reaches the CLI;
-# verify with `codex exec -m <id> "reply ok"` and check the rollout jsonl's model field.
+# that file and rewrites model= (it has set models no released CLI accepts ->
+# every cxr run 400s). Pins also get retired server-side: gpt-6.1-sol began
+# 400ing "not supported when using Codex with a ChatGPT account" by 2026-10-26.
+# Bump this when a newer model reaches the CLI or the pin 400s; candidates are
+# the slugs in ~/.codex/models_cache.json. Verify with
+# `codex exec -m <id> "reply ok"` and check the rollout jsonl's model field.
 unalias cxr 2>/dev/null
 cxr() {
   if [[ "${1:-}" == "--update" ]]; then
@@ -146,7 +149,7 @@ cxr() {
     return
   fi
 
-  command codex --remote ws://127.0.0.1:4500 --yolo -m gpt-6.1-sol "$@"
+  command codex --remote ws://127.0.0.1:4500 --yolo -m gpt-6-astra "$@"
 }
 
 # forward ports from mini1 so its dev servers open in this machine's browser
