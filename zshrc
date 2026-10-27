@@ -88,6 +88,8 @@ alias dbumount='umount ~/Dropbox && kill $(lsof -ti :2049) 2>/dev/null'
 alias dbt-r='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h localhost -r Reader'
 alias dbt-rw='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h localhost -r Superuser'
 
+alias portfolio-tui='uv run --project ~/projects/portfolio-tui portfolio-tui'
+
 # attach to a remote box's tmux over tailscale.
 # mosh survives IP changes, tailscale path flips (DERP<->direct), and wifi drops,
 # and resumes on its own. its UDP rides inside the tailscale tunnel, so it also works
