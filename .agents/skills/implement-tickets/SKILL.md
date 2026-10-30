@@ -65,13 +65,18 @@ Never run two subagents at once: they share one working tree. For each ticket in
    > You are implementing one ticket of a stacked batch. Read the ticket file at `<path>` in full —
    > "What to build" is the end-to-end behaviour, the checkboxes are the acceptance criteria. Then
    > invoke the `implement` skill and follow it for exactly this ticket's scope: TDD at the seams,
-   > typecheck and single test files regularly, full suite once at the end, then `code-review`,
+   > typecheck and single test files regularly. In place of `implement`'s full-suite step, finish
+   > with lint, typecheck, and the **related tests**: the tests your changed files reach (e.g.
+   > `jest --findRelatedTests <changed files>`, `vitest related <changed files>`) plus every test
+   > file you added or edited. A ticket that changes the database schema or migrations adds the
+   > package's full integration suite to its related tests. The orchestrator runs the full suite
+   > once, after the last ticket. Then `code-review`,
    > then commit to the current branch `<branch>` — you are on the feature branch the caller created
    > for this stacked work; implement in place, do NOT cut a new branch. In your final commit,
    > include the ticket file updated: tick each satisfied acceptance criterion and set
    > `**Status:** done`. Build nothing beyond this ticket's scope — later tickets cover the rest.
    > Return only: `{ status: done|blocked, commit: <sha>, criteria: <n>/<m> green, review: <one-line
-   > code-review outcome>, notes: <one line> }`. If you cannot get the full suite green or hit a
+   > code-review outcome>, notes: <one line> }`. If you cannot get the related tests green or hit a
    > genuine decision only a human can make, commit nothing further, set the ticket's Status line to
    > `blocked — <reason>`, and return status blocked with the reason in notes.
 
@@ -86,11 +91,34 @@ Never run two subagents at once: they share one working tree. For each ticket in
 Between tickets the tree is clean (each subagent commits its work), so each ticket stacks on the
 previous one's HEAD.
 
+## Final verification — full suite once
+
+Per-ticket runs cover only related tests, so this is the batch's one full-suite run. Run it when the
+main loop finishes; a paused batch runs it on the resume that finishes the loop.
+
+1. **Find the touched packages** from `git diff --name-only <first-batch-commit>^..HEAD`.
+2. **Run each package's full suite** (its `test` script), output redirected to a log in your
+   scratchpad. Read back only the summary lines and failing test names — keep your context light.
+3. **Green** → record it for the summary. Done.
+4. **Red** → attribute each failure to the batch commit that caused it: read the failure against
+   `git log -p <first-batch-commit>^..HEAD` for the code the failing test reaches. A failure no
+   batch commit reaches is pre-existing or flaky: report it and leave it.
+5. **Fix each culprit**, strictly sequentially, with one `general-purpose` subagent per culprit
+   commit. Prompt it with the failing tests, the culprit commit sha, and its ticket path; it makes
+   those tests green, runs the related tests, and commits a fix to `<branch>` whose message stands
+   on its own (no ticket, spec, or plan references). It returns `{ status: done|blocked, commit,
+   notes }`.
+6. **Re-run the full suite.** The step is complete when every touched package's suite is green at
+   HEAD apart from reported pre-existing failures. Still red after one fix round → stop and report
+   the failures to me.
+
 ## Final summary
 
 When all tickets are done, skipped, or the batch is paused:
 
 - Per-ticket status with each compact result (commit, criteria, review outcome).
+- The full-suite result: green, or what failed, which fix commits landed, and what was reported as
+  pre-existing.
 - The branch name and `git log <first-batch-commit>^..HEAD --oneline`.
 - What remains blocked/skipped and why.
 - Nothing is pushed or opened as a PR unless I explicitly ask.
