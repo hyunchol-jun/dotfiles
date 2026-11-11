@@ -58,6 +58,8 @@ tmux source ~/.tmux.conf
 
 `bin/tmux-split` is the same idea for panes: `prefix+|`, `prefix+-` and the `tmux-split` skill all open panes through it, which holds each window at two panes.
 
+`scripts/tmux-menu.sh` provides tap menus for clients without a keyboard (iPad): tap the left end of the status bar for sessions, agents, windows and pane actions, the right end for the session list.
+
 ### Setting up a bare repo
 
 The plugin works best with bare-cloned repositories. To set one up:
