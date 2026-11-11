@@ -54,7 +54,7 @@ tmux source ~/.tmux.conf
 
 ## Worktrees with tmux windows (`wt`)
 
-`bin/wt` creates a git worktree together with its tmux window, and removes or merges it again (`wt new`, `open`, `ls`, `rm`, `merge`; run `wt` for the usage). It has three callers: the command line, the Neovim plugin (`:WorktreeCreate`, `:WorktreeSwitch`, `:WorktreeDelete`, `:WorktreeMerge` on `<leader>wt{c,s,d,m}`, a thin UI over `wt`), and agents through the `wt` skill.
+`bin/wt` creates a git worktree together with its tmux window, and removes or merges it again (`wt new`, `open`, `ls`, `rm`, `merge`, and `gc` to clear out worktrees whose PR is merged; run `wt` for the usage). It has three callers: the command line, the Neovim plugin (`:WorktreeCreate`, `:WorktreeSwitch`, `:WorktreeDelete`, `:WorktreeMerge` on `<leader>wt{c,s,d,m}`, a thin UI over `wt`), and agents through the `wt` skill.
 
 `bin/tmux-split` is the same idea for panes: `prefix+|`, `prefix+-` and the `tmux-split` skill all open panes through it, which holds each window at two panes.
 

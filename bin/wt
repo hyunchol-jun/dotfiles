@@ -29,9 +29,19 @@
 #   wt merge <branch|path> [--strategy merge|rebase|squash] [--into BRANCH]
 #                                 merge into the default branch, then remove
 #                                 the worktree, branch and window
+#   wt gc [--yes]                 clean up: remove every worktree whose pull
+#                                 request is merged (asks GitHub through gh),
+#                                 with its branch and window, and prune entries
+#                                 whose directory is already gone. Lists what
+#                                 would go, then asks; --yes skips the question.
+#                                 Without a terminal and without --yes it only
+#                                 lists. Kept: worktrees with uncommitted
+#                                 changes, with commits made after the merged
+#                                 PR, or with no merged PR.
 #
 # stdout carries only the machine-readable result (the tmux target for
-# new/open, the table for ls); everything else goes to stderr.
+# new/open, the table for ls, the removal candidates for gc); everything else
+# goes to stderr.
 #
 # Exit codes: 0 ok · 1 error · 2 usage · 3 branch exists and is stale ·
 #             4 worktree has uncommitted changes · 5 branch not fully merged
@@ -407,6 +417,107 @@ cmd_merge() {
   kill_windows "$WT_BRANCH" "$WT_PATH"
 }
 
+# gc candidates: a worktree goes only when GitHub says its PR is merged AND the
+# local branch holds nothing beyond that PR AND the tree is clean. Squash
+# merges make `git branch --merged` useless here, hence gh.
+cmd_gc() {
+  local yes=0
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -y|--yes) yes=1; shift ;;
+      *) die "unknown option $1" 2 ;;
+    esac
+  done
+  load_repo
+  command -v gh >/dev/null || die "gh not found — wt gc asks GitHub which pull requests are merged"
+  [ -n "$MAIN_PATH" ] || die "no main worktree to run gh from"
+  local here tmp n=0 p b f
+  here=$(git rev-parse --show-toplevel 2>/dev/null || true)
+  tmp=$(mktemp -d "${TMPDIR:-/tmp}/wt-gc.XXXXXX")
+  # shellcheck disable=SC2064
+  trap "rm -rf '$tmp'" EXIT
+
+  local dead=0
+  : > "$tmp/list"
+  while IFS=$'\037' read -r p b f; do
+    if [ "$f" = prunable ]; then dead=$((dead + 1)); continue; fi
+    [ "$f" != bare ] && [ -n "$b" ] && [ "$b" != "$DEFAULT_BRANCH" ] || continue
+    [ "$p" != "$MAIN_PATH" ] && [ "$p" != "$here" ] || continue
+    n=$((n + 1))
+    printf '%s\037%s\037%s\n' "$n" "$p" "$b" >> "$tmp/list"
+    # head commits of this branch's merged PRs, newest first: "<number> <sha>"
+    ( cd "$MAIN_PATH" && gh pr list --head "$b" --state merged --limit 5 \
+        --json number,headRefOid --jq '.[] | "\(.number) \(.headRefOid)"' \
+        > "$tmp/$n.prs" 2> "$tmp/$n.err" || echo failed > "$tmp/$n.failed" ) &
+    [ $((n % 8)) -ne 0 ] || wait
+  done < <(worktrees | tr '\t' '\037')
+  wait
+  if ls "$tmp"/*.failed >/dev/null 2>&1; then
+    f=$(ls "$tmp"/*.failed | head -1)
+    die "gh failed, nothing removed: $(head -1 "${f%.failed}.err")"
+  fi
+
+  local num sha tip pr kept_nopr=0 kept_ahead=0 kept_dirty=0 count=0
+  : > "$tmp/remove"
+  while IFS=$'\037' read -r n p b; do
+    [ -s "$tmp/$n.prs" ] || { kept_nopr=$((kept_nopr + 1)); continue; }
+    tip=$(git rev-parse "refs/heads/$b")
+    pr=
+    while read -r num sha; do
+      if [ "$tip" = "$sha" ] ||
+         { git cat-file -e "$sha^{commit}" 2>/dev/null && git merge-base --is-ancestor "$tip" "$sha"; }; then
+        pr=$num; break
+      fi
+    done < "$tmp/$n.prs"
+    if [ -z "$pr" ]; then
+      kept_ahead=$((kept_ahead + 1)); say "keep  $b — has commits that are not in its merged PR"; continue
+    fi
+    if [ -n "$(git -C "$p" status --porcelain 2>/dev/null)" ]; then
+      kept_dirty=$((kept_dirty + 1)); say "keep  $b — PR #$pr is merged, but the worktree has uncommitted changes"; continue
+    fi
+    count=$((count + 1))
+    printf '%s\037%s\037%s\n' "$p" "$b" "$pr" >> "$tmp/remove"
+  done < "$tmp/list"
+
+  local mark
+  while IFS=$'\037' read -r p b pr; do
+    mark=
+    if command -v tmux >/dev/null; then
+      tmux_names "$b" "$p"
+      if [ "$WT_TMUX_MODE" = window ]; then [ -z "$(window_ids)" ] || mark='  (closes its window)'
+      else ! has_session "$T_SESSION" || mark='  (closes its session)'
+      fi
+    fi
+    say "remove  $b — PR #$pr merged$mark"
+    printf '%s\t%s\t%s\n' "$b" "$pr" "$p"
+  done < "$tmp/remove"
+  [ "$dead" -eq 0 ] || say "prune   $dead worktree entr$([ "$dead" -eq 1 ] && echo y || echo ies) whose directory is already gone"
+  say "kept: $kept_nopr without a merged PR, $kept_ahead with extra commits, $kept_dirty with uncommitted changes"
+  if [ "$count" -eq 0 ] && [ "$dead" -eq 0 ]; then say "nothing to clean up"; return 0; fi
+
+  if [ "$yes" = 0 ]; then
+    if [ -t 0 ] && [ -t 2 ]; then
+      local answer
+      printf 'wt: remove %s worktree(s) with their branches and windows, prune %s dead entr%s? [y/N] ' \
+        "$count" "$dead" "$([ "$dead" -eq 1 ] && echo y || echo ies)" >&2
+      read -r answer
+      case $answer in y|Y|yes) ;; *) say "nothing removed"; return 0 ;; esac
+    else
+      say "nothing removed — rerun with --yes to do it"; return 0
+    fi
+  fi
+
+  cd "$COMMON"
+  git worktree prune
+  while IFS=$'\037' read -r p b pr; do
+    remove_fast "$p"
+    say "removed worktree $p"
+    delete_branch "$b" -D || true   # -D: the squash-merged PR is the proof it is merged
+    kill_windows "$b" "$p"
+  done < "$tmp/remove"
+  say "done: $count worktree(s) removed, $dead dead entr$([ "$dead" -eq 1 ] && echo y || echo ies) pruned"
+}
+
 # ── entry ────────────────────────────────────────────────────────────────────
 if [ "${1:-}" = -C ]; then cd "$2" || exit 1; shift 2; fi
 cmd=${1:-}; [ $# -gt 0 ] && shift
@@ -416,5 +527,6 @@ case $cmd in
   ls|list) cmd_ls ;;
   rm|remove|delete) cmd_rm "$@" ;;
   merge) cmd_merge "$@" ;;
+  gc) cmd_gc "$@" ;;
   *) usage ;;
 esac

@@ -33,5 +33,6 @@ If `wt new` reports that the worktree was created but its window was not, the wo
 - `wt ls` lists branch, whether a window exists, and path.
 - `wt rm <branch> --branch` removes the worktree, its windows and the merged branch.
 - `wt merge <branch> [--strategy merge|rebase|squash]` merges into the default branch, then removes the worktree, branch and windows. A conflict aborts the merge and leaves everything intact. After a squash the branch is kept, because git cannot see it as merged.
+- `wt gc` removes every worktree whose pull request is merged, with its branch and window. It skips worktrees with uncommitted changes or with commits made after the merged PR. Run it bare first: without a terminal it only lists what would go. Show the user that list, and run `wt gc --yes` once they approve it.
 
-Remove or merge only worktrees this session created, or ones the user named. `wt rm` and `wt merge` close the worktree's tmux windows, so when running inside that window, report your results before calling them: the command ends your own session.
+Outside `wt gc`, remove or merge only worktrees this session created, or ones the user named. `wt rm` and `wt merge` close the worktree's tmux windows, so when running inside that window, report your results before calling them: the command ends your own session.
