@@ -9,13 +9,11 @@ SRC="$HOME/.claude/skills"
 DST="$HOME/.codex/skills"
 mkdir -p "$DST"
 
-SKILLS="ask-matt grill-with-docs triage improve-codebase-architecture \
-setup-matt-pocock-skills to-spec to-tickets implement wayfinder prototype \
-diagnosing-bugs research tdd domain-modeling codebase-design code-review \
-resolving-merge-conflicts wizard grill-me handoff teach to-questionnaire \
-wait-what grilling writing-for-agents implement-tickets scaffold-exercises \
-migrate-to-shoehorn setup-pre-commit setup-ts-deep-modules \
-docs-to-audio wt tmux-split"
+SKILLS="grill-with-docs improve-codebase-architecture setup-matt-pocock-skills \
+to-spec to-tickets implement wayfinder prototype research tdd \
+domain-modeling codebase-design code-review resolving-merge-conflicts \
+grill-me handoff wait-what grilling writing-for-agents implement-tickets \
+wt tmux-split"
 
 for s in $SKILLS; do
   if [ -e "$DST/$s" ]; then
