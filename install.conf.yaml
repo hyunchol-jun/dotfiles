@@ -13,6 +13,7 @@
     ~/.agents: .agents
     ~/bin/dev-up: bin/dev-up
     ~/bin/wt: bin/wt
+    ~/bin/tmux-split: bin/tmux-split
     ~/.claude/commands: .claude/commands
     ~/.claude/skills: .agents/skills
     ~/.claude/workflows: .claude/workflows

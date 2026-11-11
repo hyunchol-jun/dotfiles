@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# tmux-split — open a pane next to a pane, capped at two panes per window.
+#
+# One implementation, two callers: the split keys in tmux.conf (prefix+| and
+# prefix+-) and agents (the `tmux-split` skill).
+#
+#   tmux-split [-h|-v] [-t PANE] [-c DIR] [-d] [-f] [command]
+#       -h | -v     side by side (default) | top/bottom
+#       -t PANE     the pane to open next to (default: $TMUX_PANE, i.e. the
+#                   pane this was run from)
+#       -c DIR      working directory (default: PANE's current directory)
+#       -d          leave the focus where it is
+#       -f          split even when the window is at the cap
+#       command     typed into the new pane's shell, so the pane outlives it
+#
+# A window already holding two panes is at the cap: instead of a third pane,
+# a sibling window opens right after it, named "<window>+". The agent sidebar
+# pane doesn't count toward the cap.
+#
+# stdout carries only the new pane's id (e.g. %42); messages go to stderr.
+# Exit codes: 0 ok · 1 error · 2 usage
+
+set -euo pipefail
+PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
+CAP=2
+
+die()   { printf 'tmux-split: %s\n' "$1" >&2; exit "${2:-1}"; }
+usage() { sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+
+dir=-h pane=${TMUX_PANE:-} cwd='' detach=0 force=0
+while [ $# -gt 0 ]; do
+  case $1 in
+    -h|-v) dir=$1; shift ;;
+    -t) pane=${2:?}; shift 2 ;;
+    -c) cwd=${2:?}; shift 2 ;;
+    -d) detach=1; shift ;;
+    -f) force=1; shift ;;
+    --help) usage ;;
+    --) shift; break ;;
+    -*) die "unknown option $1" 2 ;;
+    *) break ;;
+  esac
+done
+cmd="$*"
+
+command -v tmux >/dev/null || die "tmux not found"
+[ -n "$pane" ] || die "not inside tmux — pass -t PANE"
+info=$(tmux display-message -p -t "$pane" '#{window_id}|#{window_name}|#{pane_current_path}' 2>/dev/null) \
+  || die "no such pane: $pane"
+window=${info%%|*}; info=${info#*|}
+[ -n "$window" ] || die "no such pane: $pane"   # tmux answers an unknown target with empty fields
+name=${info%%|*}; : "${cwd:=${info#*|}}"
+
+# the sidebar marks its own pane with the pane option @agent_sidebar
+panes=$(tmux list-panes -t "$window" -F '#{@agent_sidebar}' | grep -cv '^1$' || true)
+
+flags=(-P -F '#{pane_id}' -c "$cwd")
+[ "$detach" = 0 ] || flags+=(-d)
+if [ "$force" = 0 ] && [ "$panes" -ge "$CAP" ]; then
+  while [ "${name%+}" != "$name" ]; do name=${name%+}; done   # a "+" window's sibling is still "<window>+"
+  new=$(tmux new-window -a -t "$window" -n "$name+" "${flags[@]}") || die "could not open a window"
+  printf 'tmux-split: window at the %s-pane cap — opened window "%s+" instead\n' "$CAP" "$name" >&2
+else
+  new=$(tmux split-window "$dir" -t "$pane" "${flags[@]}") || die "could not split $pane"
+fi
+
+[ -z "$cmd" ] || tmux send-keys -t "$new" "$cmd" C-m
+printf '%s\n' "$new"
