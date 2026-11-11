@@ -1,0 +1,420 @@
+#!/usr/bin/env bash
+# wt — git worktrees, each with its own tmux window (or session).
+#
+# One implementation, three callers: you on the command line, Neovim
+# (<leader>wt* in lua/custom/worktree-tmux.lua is a thin UI over this), and
+# agents (the `wt` skill). Run it from anywhere inside the repo, or pass -C.
+#
+#   wt new <branch> [options]     create the worktree + its tmux window
+#       --path DIR                worktree location (default: sibling of main,
+#                                 named after the branch)
+#       --base REF                start point for a NEW branch (default: HEAD)
+#       --reuse                   allow an existing branch that is behind the
+#                                 default branch (otherwise: exit 3)
+#       --layout pair|agent|shell pair  = editor | agent   (default)
+#                                 agent = agent only, single pane
+#                                 shell = just a shell
+#       --prompt TEXT             start the agent on this task
+#       --prompt-file FILE        same, read from a file
+#       -d, --detach              don't switch the tmux client to the window
+#   wt open <branch|path> [--layout L] [-d]
+#                                 switch to the worktree's window, creating
+#                                 the window if it is gone
+#   wt ls                         worktrees, tab-separated: branch, window|session|-,
+#                                 path, and "prunable" when the directory is gone
+#   wt rm <branch|path> [options] remove the worktree and its window(s)
+#       --force                   discard uncommitted changes (otherwise: exit 4)
+#       --branch                  also `git branch -d` (exit 5 if unmerged)
+#       --branch-force            also `git branch -D`
+#   wt merge <branch|path> [--strategy merge|rebase|squash] [--into BRANCH]
+#                                 merge into the default branch, then remove
+#                                 the worktree, branch and window
+#
+# stdout carries only the machine-readable result (the tmux target for
+# new/open, the table for ls); everything else goes to stderr.
+#
+# Exit codes: 0 ok · 1 error · 2 usage · 3 branch exists and is stale ·
+#             4 worktree has uncommitted changes · 5 branch not fully merged
+#
+# Per-project config: ~/.config/wt/projects/<project>.sh, sourced as bash.
+# <project> is the repo name (`stack` for a bare repo at .../stack, or for
+# .../stack.git, or for .../stack/.git). See the defaults below for the knobs.
+
+set -euo pipefail
+shopt -s inherit_errexit 2>/dev/null || true   # bash >= 4.4; older bash relies on the explicit `|| die`s
+PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
+
+# ── defaults (override per project) ──────────────────────────────────────────
+WT_TMUX_MODE=session          # session: one tmux session per worktree
+                              # window : all worktrees as windows of WT_SESSION
+WT_SESSION=                   # shared session name (required for window mode)
+WT_SESSION_PREFIX=wt-         # session-mode sessions are named <prefix><branch>
+WT_LAYOUT=pair                # default --layout
+WT_EDITOR_CMD=nvim            # left pane of `pair`
+WT_AGENT_CMD='claude'         # agent pane; a prompt is appended as one argument
+WT_DIRENV_ALLOW=1             # `direnv allow` in a new window when .envrc exists
+WT_SEED_DIRENV=0              # symlink main's .direnv so nix-direnv reuses its cache
+WT_SYMLINKS=()                # paths (relative to the worktree) symlinked from main
+WT_COPIES=()                  # paths copied from main
+WT_MERGE_STRATEGY=merge
+WT_MERGE_TARGET=              # default: the repo's default branch
+# wt_post_create <path> <branch> <tmux-target>   optional hook, define in config
+
+say()  { printf 'wt: %s\n' "$*" >&2; }
+die()  { say "$1"; exit "${2:-1}"; }
+usage() { sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+
+# ── repo facts ───────────────────────────────────────────────────────────────
+load_repo() {
+  COMMON=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) \
+    || die "not inside a git repository"
+  local base=${COMMON%/.git}; base=${base%.git}
+  PROJECT=${base##*/}
+  DEFAULT_BRANCH=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || true)
+  DEFAULT_BRANCH=${DEFAULT_BRANCH#origin/}; : "${DEFAULT_BRANCH:=main}"
+  local cfg="${XDG_CONFIG_HOME:-$HOME/.config}/wt/projects/$PROJECT.sh"
+  # shellcheck disable=SC1090
+  [ -f "$cfg" ] && . "$cfg"
+  MAIN_PATH=$(path_of_branch "$DEFAULT_BRANCH" || true)
+  [ -n "$MAIN_PATH" ] || MAIN_PATH=$(worktrees | awk -F'\t' '$3 != "bare" { print $1; exit }')
+}
+
+# one line per worktree: path <TAB> branch <TAB> flag   (branch may be empty)
+worktrees() {
+  git worktree list --porcelain | awk '
+    function out() { if (p != "") print p "\t" b "\t" f }
+    /^worktree / { out(); p = substr($0, 10); b = ""; f = "" }
+    /^branch refs\/heads\// { b = substr($0, 19) }
+    /^bare$/ { f = "bare" }
+    /^prunable/ { f = "prunable" }
+    END { out() }'
+}
+path_of_branch() { worktrees | awk -F'\t' -v b="$1" '$2 == b { print $1; f = 1; exit } END { exit !f }'; }
+branch_of_path() { worktrees | awk -F'\t' -v p="$1" '$1 == p { print $2; f = 1; exit } END { exit !f }'; }
+
+# resolve a <branch|path> argument to WT_PATH + WT_BRANCH of a registered worktree
+resolve() {
+  local arg=$1 p
+  if p=$(path_of_branch "$arg"); then WT_PATH=$p; WT_BRANCH=$arg; return; fi
+  if [ -d "$arg" ]; then
+    p=$(cd "$arg" && pwd -P)
+    if WT_BRANCH=$(branch_of_path "$p"); then WT_PATH=$p; return; fi
+  fi
+  die "no worktree for '$arg' (try: wt ls)"
+}
+
+# ── tmux naming ──────────────────────────────────────────────────────────────
+tmux_name() { printf '%s' "${1:-${2##*/}}" | sed 's/[^A-Za-z0-9_-]/_/g'; }
+
+# sets T_SESSION, T_WINDOW (window mode only) from branch/path
+tmux_names() {
+  local name; name=$(tmux_name "$1" "$2")
+  if [ "$WT_TMUX_MODE" = window ]; then
+    [ -n "$WT_SESSION" ] || die "WT_SESSION is required when WT_TMUX_MODE=window"
+    T_SESSION=$WT_SESSION; T_WINDOW=$name
+  else
+    T_SESSION=$WT_SESSION_PREFIX$name; T_WINDOW=
+  fi
+}
+has_session() { tmux has-session -t "=$1" 2>/dev/null; }
+# ids of the worktree's windows: the exact name, plus the "<name>+" siblings
+# that the capped split keys (tmux.conf) open next to it
+window_ids() {
+  { tmux list-windows -t "=$T_SESSION" -F '#{window_id} #{window_name}' 2>/dev/null || true; } |
+    awk -v n="$T_WINDOW" -v all="${1:-}" '$2 == n || (all && $2 == n "+") { print $1 }'
+}
+
+# ── window setup ─────────────────────────────────────────────────────────────
+# open_window <path> <branch> <layout> <prompt-file|""> -> prints tmux target
+open_window() {
+  local path=$1 branch=$2 layout=$3 prompt_file=$4 target existing
+  command -v tmux >/dev/null || die "tmux not found"
+  tmux_names "$branch" "$path"
+
+  if [ "$WT_TMUX_MODE" = window ]; then existing=$(window_ids | head -1)
+  elif has_session "$T_SESSION"; then existing="=$T_SESSION"
+  else existing=
+  fi
+  if [ -n "$existing" ]; then
+    [ -z "$prompt_file" ] || say "window already exists — the prompt was NOT sent"
+    printf '%s\n' "$existing"; return
+  fi
+
+  local shell_cmd=()
+  if [ "$WT_DIRENV_ALLOW" = 1 ] && [ -f "$path/.envrc" ]; then
+    shell_cmd=("direnv allow; exec ${SHELL:-/bin/zsh}")
+  fi
+  if [ "$WT_TMUX_MODE" = window ] && has_session "$T_SESSION"; then
+    target=$(tmux new-window -d -P -F '#{window_id}' -t "=$T_SESSION:" -n "$T_WINDOW" -c "$path" ${shell_cmd[@]+"${shell_cmd[@]}"}) \
+      || die "tmux: could not create window $T_WINDOW in $T_SESSION"
+  else
+    target=$(tmux new-session -d -P -F '#{window_id}' -s "$T_SESSION" ${T_WINDOW:+-n "$T_WINDOW"} -c "$path" ${shell_cmd[@]+"${shell_cmd[@]}"}) \
+      || die "tmux: could not create session $T_SESSION"
+  fi
+
+  # the agent command is typed into an interactive shell (so aliases and the
+  # direnv environment apply); the prompt travels via a file to dodge quoting
+  local agent=$WT_AGENT_CMD
+  if [ -n "$prompt_file" ]; then
+    agent="$agent \"\$(cat $(printf '%q' "$prompt_file"))\""
+  fi
+  local first; first=$(tmux display-message -p -t "$target" '#{pane_id}')
+  case $layout in
+    shell) ;;
+    agent) tmux send-keys -t "$first" "$agent" C-m ;;
+    pair)
+      local right
+      right=$(tmux split-window -d -h -l 50% -P -F '#{pane_id}' -t "$first" -c "$path" ${shell_cmd[@]+"${shell_cmd[@]}"})
+      tmux send-keys -t "$right" "$agent" C-m
+      tmux send-keys -t "$first" "$WT_EDITOR_CMD" C-m ;;
+    *) die "unknown layout '$layout' (pair|agent|shell)" 2 ;;
+  esac
+  if declare -F wt_post_create >/dev/null; then wt_post_create "$path" "$branch" "$target" >&2 || true; fi
+  printf '%s\n' "$target"
+}
+
+switch_to() { [ -n "${TMUX:-}" ] && tmux switch-client -t "$1" 2>/dev/null || true; }
+
+# ── files seeded from the main worktree ──────────────────────────────────────
+seed_from_main() {
+  local path=$1 f
+  [ -n "$MAIN_PATH" ] && [ "$MAIN_PATH" != "$path" ] || return 0
+  for f in ${WT_COPIES[@]+"${WT_COPIES[@]}"}; do
+    mkdir -p "$(dirname "$path/$f")"
+    cp "$MAIN_PATH/$f" "$path/$f" 2>/dev/null || say "could not copy $f from main"
+  done
+  for f in ${WT_SYMLINKS[@]+"${WT_SYMLINKS[@]}"}; do
+    mkdir -p "$(dirname "$path/$f")"
+    rm -f "$path/$f"
+    ln -s "$MAIN_PATH/$f" "$path/$f" || say "could not symlink $f from main"
+  done
+  if [ "$WT_SEED_DIRENV" = 1 ] && [ -d "$MAIN_PATH/.direnv" ]; then
+    ln -sfn "$MAIN_PATH/.direnv" "$path/.direnv"
+    # nix-direnv calls the cached profile stale when a watched file (flake.nix,
+    # flake.lock, .envrc) is newer than the profile rc, and a fresh checkout
+    # stamps those with "now" — so bump the rc last
+    for f in "$path"/.direnv/*.rc; do [ -e "$f" ] && touch "$f"; done
+  fi
+}
+
+# ── removal ──────────────────────────────────────────────────────────────────
+# `git worktree remove` deletes node_modules file by file, which takes minutes
+# on a stack worktree. Move the directory aside (instant on one volume), prune
+# the registration, and delete the moved copy in the background.
+remove_fast() {
+  local path=$1 trash
+  trash="$path.deleting-$(date +%s)"
+  mv "$path" "$trash" || die "could not move $path aside"
+  git worktree prune
+  rmdir "$(dirname "$path")" 2>/dev/null || true   # drop an emptied feat/ or fix/ parent
+  ( nohup rm -rf "$trash" >/dev/null 2>&1 & )
+}
+
+kill_windows() {
+  tmux_names "$1" "$2"
+  command -v tmux >/dev/null && has_session "$T_SESSION" || return 0
+  if [ "$WT_TMUX_MODE" = window ]; then
+    local id
+    # -r: when wt runs inside the window being removed, that kill ends this
+    # process too, so it has to be the last one
+    for id in $(window_ids all | sort -r); do tmux kill-window -t "$id" 2>/dev/null || true; done
+  else
+    tmux kill-session -t "=$T_SESSION" 2>/dev/null || true
+  fi
+}
+
+delete_branch() {  # delete_branch <branch> <-d|-D>
+  # from the main worktree: -d measures "merged" against HEAD, and the bare
+  # repo's own HEAD is not a meaningful yardstick
+  local out
+  if out=$(git -C "${MAIN_PATH:-$COMMON}" branch "$2" "$1" 2>&1); then say "deleted branch $1"
+  else say "branch '$1' kept: ${out#error: }"; return 5
+  fi
+}
+
+# ── commands ─────────────────────────────────────────────────────────────────
+cmd_new() {
+  local branch='' path='' base='' reuse=0 layout='' prompt='' prompt_file='' detach=0
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --path) path=$2; shift 2 ;;
+      --base) base=$2; shift 2 ;;
+      --reuse) reuse=1; shift ;;
+      --layout) layout=$2; shift 2 ;;
+      --prompt) prompt=$2; shift 2 ;;
+      --prompt-file) prompt_file=$2; shift 2 ;;
+      -d|--detach) detach=1; shift ;;
+      -*) die "unknown option $1" 2 ;;
+      *) [ -z "$branch" ] || die "unexpected argument $1" 2; branch=$1; shift ;;
+    esac
+  done
+  [ -n "$branch" ] || usage
+  load_repo
+  layout=${layout:-$WT_LAYOUT}
+  case $layout in pair|agent|shell) ;; *) die "unknown layout '$layout' (pair|agent|shell)" 2 ;; esac
+  [ -z "$prompt_file" ] || [ -r "$prompt_file" ] || die "cannot read $prompt_file"
+
+  if [ -z "$path" ]; then
+    # bare repo: worktrees live inside it; otherwise next to the main worktree
+    if [ "$(git -C "$COMMON" rev-parse --is-bare-repository)" = true ] || [ -z "$MAIN_PATH" ]; then
+      path="$COMMON/$branch"
+    else
+      path="$(dirname "$MAIN_PATH")/$branch"
+    fi
+  fi
+  path_of_branch "$branch" >/dev/null && die "branch '$branch' already has a worktree at $(path_of_branch "$branch") (use: wt open $branch)"
+  [ ! -e "$path" ] || die "$path already exists"
+
+  if git show-ref --verify --quiet "refs/heads/$branch"; then
+    # reusing an existing branch silently is a footgun: a stale branch is a
+    # stale snapshot of the whole repo
+    local behind
+    behind=$(git rev-list --count "$branch..$DEFAULT_BRANCH" 2>/dev/null || echo 0)
+    if [ "$behind" -gt 0 ] && [ "$reuse" = 0 ]; then
+      die "branch '$branch' already exists and is $behind commit(s) behind $DEFAULT_BRANCH — pass --reuse, or pick a new name" 3
+    fi
+    [ -z "$base" ] || say "branch '$branch' exists — ignoring --base"
+    git worktree add "$path" "$branch" >&2
+  else
+    git worktree add -b "$branch" "$path" ${base:+"$base"} >&2
+  fi
+  path=$(cd "$path" && pwd -P)
+  seed_from_main "$path"
+
+  if [ -n "$prompt" ]; then
+    local dir="${TMPDIR:-/tmp}/wt-prompts"
+    mkdir -p "$dir"
+    prompt_file="$dir/$(tmux_name "$branch" "$path").$$.md"
+    printf '%s\n' "$prompt" > "$prompt_file"
+  elif [ -n "$prompt_file" ]; then
+    prompt_file=$(cd "$(dirname "$prompt_file")" && pwd -P)/$(basename "$prompt_file")
+  fi
+
+  say "created worktree $branch at $path"
+  local target
+  target=$(open_window "$path" "$branch" "$layout" "$prompt_file") \
+    || die "worktree created, but its tmux window was not — retry with: wt open $branch"
+  [ "$detach" = 1 ] || switch_to "$target"
+  printf '%s\n' "$target"
+}
+
+cmd_open() {
+  local arg='' layout='' detach=0
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --layout) layout=$2; shift 2 ;;
+      -d|--detach) detach=1; shift ;;
+      -*) die "unknown option $1" 2 ;;
+      *) arg=$1; shift ;;
+    esac
+  done
+  [ -n "$arg" ] || usage
+  load_repo; resolve "$arg"
+  local target
+  target=$(open_window "$WT_PATH" "$WT_BRANCH" "${layout:-$WT_LAYOUT}" "") || exit 1
+  [ "$detach" = 1 ] || switch_to "$target"
+  printf '%s\n' "$target"
+}
+
+cmd_ls() {
+  load_repo
+  local p b f mark
+  # \037 separator: `read` would collapse the empty fields of a tab-separated line
+  worktrees | tr '\t' '\037' | while IFS=$'\037' read -r p b f; do
+    [ "$f" = bare ] && continue
+    mark=-
+    if command -v tmux >/dev/null; then
+      tmux_names "$b" "$p"
+      if [ "$WT_TMUX_MODE" = window ]; then [ -n "$(window_ids)" ] && mark=window
+      else has_session "$T_SESSION" && mark=session
+      fi
+    fi
+    printf '%s\t%s\t%s\t%s\n' "${b:-(detached)}" "$mark" "$p" "$f"
+  done
+}
+
+cmd_rm() {
+  local arg='' force=0 del=''
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --force) force=1; shift ;;
+      --branch) del=-d; shift ;;
+      --branch-force) del=-D; shift ;;
+      -*) die "unknown option $1" 2 ;;
+      *) arg=$1; shift ;;
+    esac
+  done
+  [ -n "$arg" ] || usage
+  load_repo; resolve "$arg"
+  [ "$WT_BRANCH" != "$DEFAULT_BRANCH" ] || die "refusing to remove the $DEFAULT_BRANCH worktree"
+  [ "$WT_PATH" != "$COMMON" ] && [ "$WT_PATH" != "$MAIN_PATH" ] || die "refusing to remove the main worktree"
+  if [ "$force" = 0 ] && [ -n "$(git -C "$WT_PATH" status --porcelain 2>/dev/null)" ]; then
+    die "worktree '$arg' has uncommitted changes — pass --force to discard them" 4
+  fi
+  cd "$COMMON"   # the worktree may be our own cwd
+  remove_fast "$WT_PATH"
+  say "removed worktree $WT_PATH"
+  local rc=0
+  if [ -n "$del" ] && [ -n "$WT_BRANCH" ]; then delete_branch "$WT_BRANCH" "$del" || rc=$?; fi
+  kill_windows "$WT_BRANCH" "$WT_PATH"
+  return $rc
+}
+
+cmd_merge() {
+  local arg='' strategy='' into=''
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --strategy) strategy=$2; shift 2 ;;
+      --into) into=$2; shift 2 ;;
+      -*) die "unknown option $1" 2 ;;
+      *) arg=$1; shift ;;
+    esac
+  done
+  [ -n "$arg" ] || usage
+  load_repo; resolve "$arg"
+  strategy=${strategy:-$WT_MERGE_STRATEGY}
+  into=${into:-${WT_MERGE_TARGET:-$DEFAULT_BRANCH}}
+  [ -n "$WT_BRANCH" ] && [ "$WT_BRANCH" != "$into" ] || die "nothing to merge"
+  local main; main=$(path_of_branch "$into" || true); main=${main:-$MAIN_PATH}
+  [ -n "$main" ] || die "could not find a worktree for $into"
+  git -C "$main" checkout "$into" >&2 || die "could not check out $into in $main"
+
+  case $strategy in
+    merge)
+      git -C "$main" merge "$WT_BRANCH" >&2 || {
+        git -C "$main" merge --abort 2>/dev/null || true
+        die "merge failed and was aborted — worktree and branch left intact"; } ;;
+    rebase)
+      git -C "$WT_PATH" rebase "$into" >&2 || {
+        git -C "$WT_PATH" rebase --abort 2>/dev/null || true
+        die "rebase failed and was aborted — worktree and branch left intact"; }
+      git -C "$main" merge --ff-only "$WT_BRANCH" >&2 || die "fast-forward failed" ;;
+    squash)
+      git -C "$main" merge --squash "$WT_BRANCH" >&2 || {
+        git -C "$main" merge --abort 2>/dev/null || git -C "$main" reset --merge 2>/dev/null || true
+        die "squash merge failed and was aborted — worktree and branch left intact"; }
+      git -C "$main" commit -m "Squash merge branch '$WT_BRANCH'" >&2 || die "squash commit failed" ;;
+    *) die "unknown strategy '$strategy' (merge|rebase|squash)" 2 ;;
+  esac
+  say "merged $WT_BRANCH into $into ($strategy)"
+
+  cd "$COMMON"
+  remove_fast "$WT_PATH"
+  say "removed worktree $WT_PATH"
+  # after a squash -d still sees the branch as unmerged and keeps it; that is
+  # deliberate — discarding it is `git branch -D`, your call
+  delete_branch "$WT_BRANCH" -d || true
+  kill_windows "$WT_BRANCH" "$WT_PATH"
+}
+
+# ── entry ────────────────────────────────────────────────────────────────────
+if [ "${1:-}" = -C ]; then cd "$2" || exit 1; shift 2; fi
+cmd=${1:-}; [ $# -gt 0 ] && shift
+case $cmd in
+  new) cmd_new "$@" ;;
+  open|switch) cmd_open "$@" ;;
+  ls|list) cmd_ls ;;
+  rm|remove|delete) cmd_rm "$@" ;;
+  merge) cmd_merge "$@" ;;
+  *) usage ;;
+esac

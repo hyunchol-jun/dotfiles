@@ -52,9 +52,11 @@ Per-project overrides: add a `.mise.toml` in any project directory to pin specif
 tmux source ~/.tmux.conf
 ```
 
-## Worktree-Tmux (Neovim Plugin)
+## Worktrees with tmux windows (`wt`)
 
-A custom Neovim plugin for managing git worktrees with tmux integration. Provides `:WorktreeCreate`, `:WorktreeSwitch`, `:WorktreeDelete`, and `:WorktreeMerge` commands.
+`bin/wt` creates a git worktree together with its tmux window, and removes or merges it again (`wt new`, `open`, `ls`, `rm`, `merge`; run `wt` for the usage). It has three callers: the command line, the Neovim plugin (`:WorktreeCreate`, `:WorktreeSwitch`, `:WorktreeDelete`, `:WorktreeMerge` on `<leader>wt{c,s,d,m}`, a thin UI over `wt`), and agents through the `wt` skill.
+
+`bin/tmux-split` is the same idea for panes: `prefix+|`, `prefix+-` and the `tmux-split` skill all open panes through it, which holds each window at two panes.
 
 ### Setting up a bare repo
 
@@ -71,7 +73,7 @@ git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
 # 3. Fetch remote branches
 git fetch origin
 
-# 4. Set the default branch HEAD ref (used by the plugin to detect the default branch)
+# 4. Set the default branch HEAD ref (used by `wt` to detect the default branch)
 git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
 
 # 5. Create a worktree for the main branch
@@ -85,11 +87,11 @@ This gives you a structure like:
 ~/path/to/repo.git/main/  # main branch worktree
 ```
 
-New worktrees created via `:WorktreeCreate` will appear as siblings (e.g. `~/path/to/repo.git/feature-branch/`).
+New worktrees created via `wt new` or `:WorktreeCreate` will appear as siblings (e.g. `~/path/to/repo.git/feature-branch/`).
 
 ### Project-specific config
 
-Per-project overrides (tmux mode, custom layouts, pane commands) are defined in `config/nvim/lua/custom/worktree-tmux-projects.lua`. The key must match the git repository directory name (e.g. `repo` from `repo.git`).
+Per-project overrides (tmux mode, agent command, files symlinked from the main worktree) live in `config/wt/projects/<project>.sh`, sourced by `wt` as bash. `<project>` is the git repository directory name (e.g. `repo` from `repo.git`). The knobs and their defaults are listed at the top of `bin/wt`.
 
 ## Structure
 

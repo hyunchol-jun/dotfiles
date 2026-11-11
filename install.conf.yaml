@@ -12,6 +12,7 @@
     ~/.zshrc: zshrc
     ~/.agents: .agents
     ~/bin/dev-up: bin/dev-up
+    ~/bin/wt: bin/wt
     ~/.claude/commands: .claude/commands
     ~/.claude/skills: .agents/skills
     ~/.claude/workflows: .claude/workflows
