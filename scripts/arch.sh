@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Update system
+# Update system. Omarchy blocks a direct `pacman -Syu` with a pacman hook: its
+# own updater takes the snapshot and runs the migrations a bare upgrade skips.
 echo "==> Updating system..."
-sudo pacman -Syu --noconfirm
+if command -v omarchy-update &>/dev/null; then
+  omarchy-update -y
+else
+  sudo pacman -Syu --noconfirm
+fi
 
 # Install packages via pacman
 echo "==> Installing pacman packages..."
