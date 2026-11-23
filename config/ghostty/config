@@ -1,4 +1,6 @@
 font-family = JetBrainsMono Nerd Font Mono
+# fallback: Omarchy ships ttf-jetbrains-mono-nerd-basic, which has no Mono variant
+font-family = JetBrainsMono Nerd Font
 font-size = 11
 font-feature = -calt
 font-feature = -liga

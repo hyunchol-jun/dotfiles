@@ -3,6 +3,9 @@
 # Idempotent: safe to re-run on every `./install`.
 # See docs/codex-remote-computer-use.md
 
+# launchd is macOS only
+[ "$(uname -s)" = Darwin ] || exit 0
+
 # Skip machines without codex installed (plist expects it at ~/.local/bin/codex)
 [ -x "$HOME/.local/bin/codex" ] || exit 0
 

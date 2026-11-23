@@ -23,12 +23,21 @@ sudo pacman -S --needed --noconfirm \
   github-cli \
   zsh \
   zsh-autosuggestions \
+  zsh-syntax-highlighting \
+  zsh-history-substring-search \
+  jq \
+  mosh \
   zoxide \
   tailscale \
   yazi \
   rclone \
-  visidata \
-  ttf-jetbrains-mono-nerd
+  visidata
+
+# Omarchy ships ttf-jetbrains-mono-nerd-basic, which provides this name and
+# conflicts with the full package, so only install when nothing provides it
+if ! pacman -Q ttf-jetbrains-mono-nerd &>/dev/null; then
+  sudo pacman -S --needed --noconfirm ttf-jetbrains-mono-nerd
+fi
 
 # Install yay (AUR helper)
 if ! command -v yay &>/dev/null; then
@@ -54,6 +63,13 @@ if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
     obsidian \
     intellij-idea-community-edition \
     dbeaver
+fi
+
+# zsh as the login shell
+ZSH_PATH="$(command -v zsh)"
+if [ "$(getent passwd "$USER" | cut -d: -f7)" != "$ZSH_PATH" ]; then
+  echo "==> Changing login shell to zsh..."
+  sudo chsh -s "$ZSH_PATH" "$USER"
 fi
 
 echo "==> Arch Linux setup complete!"

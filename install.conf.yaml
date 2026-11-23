@@ -6,27 +6,70 @@
 - clean: ["~"]
 
 - link:
-    ~/.config: config
+    # macOS: the repo owns all of ~/.config. On Linux the desktop (Omarchy,
+    # Hyprland, browsers) keeps its own files there, so that link is skipped and
+    # the Linux block below links one tool at a time instead.
+    ~/.config:
+      path: config
+      if: '[ "$(uname -s)" = Darwin ]'
     ~/.dotfiles: ""
     ~/.tmux.conf: tmux.conf
     ~/.zshrc: zshrc
-    ~/.agents: .agents
+    ~/.agents:
+      path: .agents
+      if: '[ "$(uname -s)" = Darwin ]'
     ~/bin/dev-up: bin/dev-up
     ~/bin/wt: bin/wt
     ~/bin/tmux-split: bin/tmux-split
     ~/.claude/commands: .claude/commands
-    ~/.claude/skills: .agents/skills
+    ~/.claude/skills:
+      path: .agents/skills
+      if: '[ "$(uname -s)" = Darwin ]'
     ~/.claude/workflows: .claude/workflows
     ~/.claude/statusline-command.sh: .claude/statusline-command.sh
     ~/.claude/CLAUDE.md: .claude/CLAUDE.md
     ~/.claude/ntfy-notify.sh: .claude/ntfy-notify.sh
     ~/.claude/agent-state.sh: .claude/agent-state.sh
-    ~/.claude/.i-have-adhd-always: .claude/.i-have-adhd-always
     ~/.claude/output-styles: .claude/output-styles
     ~/.claude/mods: .claude/mods
     ~/.omp/agent/config.yml: .omp/config.yml
     ~/.codex/notify.sh: .codex/notify.sh
     ~/.codex/AGENTS.md: .codex/AGENTS.md
+
+# Linux: link each tool into the existing ~/.config, and each skill into the
+# existing skill dirs (Omarchy ships its own skills there as symlinks). A
+# directory that is already there is left alone and reported: move it aside
+# first if ours should replace it.
+- link:
+    ~/.config/nvim:
+      path: config/nvim
+      if: '[ "$(uname -s)" = Linux ]'
+    ~/.config/ghostty:
+      path: config/ghostty
+      if: '[ "$(uname -s)" = Linux ]'
+    ~/.config/mise:
+      path: config/mise
+      if: '[ "$(uname -s)" = Linux ]'
+    ~/.config/yazi:
+      path: config/yazi
+      if: '[ "$(uname -s)" = Linux ]'
+    ~/.config/wt:
+      path: config/wt
+      if: '[ "$(uname -s)" = Linux ]'
+    ~/.config/tmuxinator:
+      path: config/tmuxinator
+      if: '[ "$(uname -s)" = Linux ]'
+    ~/.config/htop:
+      path: config/htop
+      if: '[ "$(uname -s)" = Linux ]'
+    ~/.agents/skills/:
+      glob: true
+      path: .agents/skills/*
+      if: '[ "$(uname -s)" = Linux ]'
+    ~/.claude/skills/:
+      glob: true
+      path: .agents/skills/*
+      if: '[ "$(uname -s)" = Linux ]'
 
 - shell:
     - [git submodule update --init --recursive, Installing submodules]
