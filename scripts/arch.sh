@@ -70,6 +70,9 @@ if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
     dbeaver
 fi
 
+# Keyboard remaps (the Linux counterpart of Karabiner on the Mac)
+"$(dirname "${BASH_SOURCE[0]}")/keyd.sh"
+
 # zsh as the login shell
 ZSH_PATH="$(command -v zsh)"
 if [ "$(getent passwd "$USER" | cut -d: -f7)" != "$ZSH_PATH" ]; then

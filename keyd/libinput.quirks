@@ -1,0 +1,7 @@
+# Installed to /etc/libinput/local-overrides.quirks by scripts/keyd.sh.
+# keyd types through a virtual keyboard, which libinput takes for an external
+# one, so "disable touchpad while typing" stops working. Mark it as built in.
+[keyd virtual keyboard]
+MatchUdevType=keyboard
+MatchName=keyd virtual keyboard
+AttrKeyboardIntegration=internal
