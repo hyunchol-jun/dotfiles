@@ -15,6 +15,15 @@ hl.config({
   },
 })
 
+-- Always tile ------------------------------------------------------------------
+--
+-- Omarchy's Super+L cycles a workspace through tiling, scrolling and floating
+-- (the floating one brings up a dock). Easy to hit by accident, so both
+-- directions are unbound. If a workspace does end up in another layout, run
+-- omarchy-hyprland-workspace-layout-toggle until it reports dwindle.
+hl.unbind("SUPER + L")
+hl.unbind("SUPER + ALT + L")
+
 -- Ctrl+h/j/k/l moves focus between windows ------------------------------------
 --
 -- One set of keys walks through Neovim splits, tmux panes and app windows:
