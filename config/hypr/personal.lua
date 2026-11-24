@@ -178,6 +178,15 @@ hl.on("window.title", sync_focus_binds)
 o.personal.focus_poll = hl.timer(sync_focus_binds, { timeout = 2000, type = "repeat" })
 sync_focus_binds()
 
+-- Ctrl+1..0 switches workspace, as on macOS ------------------------------------
+--
+-- Added next to Omarchy's Super+1..0, which keep working. Apps no longer see
+-- Ctrl+digit (in Chromium: jump to tab N; Alt+digit does the same there).
+for workspace = 1, 10 do
+  -- Key codes 10-19 are the number row, whatever the keyboard layout.
+  o.bind("CTRL + code:" .. tostring(workspace + 9), "Switch to workspace " .. workspace, o.workspaces.focus(workspace))
+end
+
 -- Plugged in: never idle --------------------------------------------------------
 --
 -- Omarchy starts a screensaver after 2.5 idle minutes and locks (display off)
