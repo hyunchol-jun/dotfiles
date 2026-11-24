@@ -6,17 +6,23 @@
 
 -- Input ----------------------------------------------------------------------
 
--- Natural scrolling on the trackpad, matching macOS. Omarchy scrolls at 0.4
--- of libinput's speed, which is still fast on the ThinkPad's trackpad; lower
--- is slower.
+-- Natural scrolling on the mouse and the trackpad, matching macOS. Omarchy
+-- scrolls the trackpad at 0.4 of libinput's speed, which is still fast on the
+-- ThinkPad's trackpad; lower is slower.
 hl.config({
   input = {
+    natural_scroll = true,
     touchpad = {
       natural_scroll = true,
       scroll_factor = 0.1,
     },
   },
 })
+
+-- The Logitech mouse moves too fast at libinput's default speed. Sensitivity
+-- runs from -1 (slowest) to 1; named by device so the trackpad and TrackPoint
+-- keep the default. Device names: hyprctl devices
+hl.device({ name = "logitech-usb-receiver-mouse", sensitivity = -0.3 })
 
 -- Display scale ---------------------------------------------------------------
 --
