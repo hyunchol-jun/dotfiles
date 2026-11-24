@@ -20,6 +20,33 @@ This will:
 5. Install Claude Code if missing
 6. Clone TPM (Tmux Plugin Manager) if missing
 
+### Arch Linux / Omarchy
+
+On a machine without a GitHub SSH key, clone over HTTPS instead (the repo must
+live at `~/dotfiles`; several scripts refer to that path):
+
+```bash
+git clone https://github.com/hyunchol-jun/dotfiles.git ~/dotfiles
+~/dotfiles/scripts/bootstrap.sh   # in a terminal on the machine itself: it asks for the sudo password
+```
+
+Run it from the desktop session, not over SSH, so the GUI apps (Ghostty and
+friends) are installed too. Then log out and back in for zsh.
+
+On [Omarchy](https://omarchy.org) the same command also sets up the desktop:
+
+| What | Where |
+|---|---|
+| System update through `omarchy-update` (a direct `pacman -Syu` is blocked there) | `scripts/arch.sh` |
+| Caps Lock = Escape on tap, Control on hold (keyd) | `keyd/default.conf`, `scripts/keyd.sh` |
+| Omarchy's own nvim, ghostty and tmux configs moved to `~/.config-omarchy-backup` | `scripts/omarchy-prepare.sh` |
+| Configs linked one tool at a time into the existing `~/.config` | Linux block of `install.conf.yaml` |
+| Hyprland: natural scrolling, no gaps, 1px border, no animations, always tiling, Ctrl+h/j/k/l focus across Neovim, tmux and app windows, Ctrl+1..0 workspaces, Alt+h/j/k/l/m/c window placement, terminal and browser opened on workspaces 1 and 2 at startup, no idling while plugged in | `config/hypr/personal.lua` |
+| Black wallpaper, kept across theme changes | `omarchy/`, `scripts/hypr-setup.sh` |
+
+After editing `config/hypr/personal.lua` run `hyprctl reload`; after editing
+`keyd/default.conf` run `scripts/keyd.sh`.
+
 ## Runtime Management (mise)
 
 mise manages Node, Java, and Python versions. Configuration lives in `config/mise/config.toml`.
@@ -37,8 +64,7 @@ Per-project overrides: add a `.mise.toml` in any project directory to pin specif
 
 ### Tmux plugins
 
-1. Open tmux
-2. Press `prefix + I` to install plugins via TPM
+Bootstrap installs them. To add one later, press `prefix + I` inside tmux.
 
 ### Dropbox via rclone NFS
 
@@ -103,9 +129,16 @@ scripts/
   bootstrap.sh            # Entry point: OS detection + common setup
   macos.sh                # macOS: Homebrew, brew bundle, defaults
   arch.sh                 # Arch: pacman, yay, AUR packages
+  keyd.sh                 # Arch: keyboard remaps (keyd)
+  omarchy-prepare.sh      # Omarchy: move its stock configs aside before linking
+  hypr-setup.sh           # Omarchy: hook config/hypr/personal.lua into Hyprland, wallpaper
+keyd/                     # keyd config (Linux counterpart of Karabiner)
+omarchy/                  # Black wallpaper and the hook that keeps it
+tmux/hypr-nav.conf        # tmux side of Ctrl+h/j/k/l across app windows (Hyprland only)
 config/
   mise/config.toml        # Runtime versions (node, java, python)
   nvim/                   # Neovim config
+  hypr/personal.lua       # Hyprland settings for Omarchy
 install.conf.yaml         # Dotbot symlink configuration
 zshrc                     # Zsh configuration
 tmux.conf                 # Tmux configuration

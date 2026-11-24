@@ -5,6 +5,9 @@
 
 - clean: ["~"]
 
+- shell:
+    - [sh scripts/omarchy-prepare.sh, Moving Omarchy's nvim/ghostty/tmux configs aside (Omarchy only)]
+
 - link:
     # macOS: the repo owns all of ~/.config. On Linux the desktop (Omarchy,
     # Hyprland, browsers) keeps its own files there, so that link is skipped and

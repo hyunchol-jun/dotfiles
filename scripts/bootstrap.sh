@@ -143,4 +143,10 @@ else
   echo "==> TPM already installed"
 fi
 
+# tmux plugins (same as prefix + I); skipped quietly if tmux is missing
+if command -v tmux &>/dev/null; then
+  echo "==> Installing tmux plugins..."
+  "$TPM_DIR/bin/install_plugins" >/dev/null || echo "    tmux plugin install failed; press prefix + I inside tmux"
+fi
+
 echo "==> Bootstrap complete!"
