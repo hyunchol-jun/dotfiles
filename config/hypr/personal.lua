@@ -186,13 +186,20 @@ hl.on("window.title", sync_focus_binds)
 o.personal.focus_poll = hl.timer(sync_focus_binds, { timeout = 2000, type = "repeat" })
 sync_focus_binds()
 
--- Super+W / Super+T act on browser tabs, as Cmd+W / Cmd+T do on macOS ----------
+-- Super+W/T/R/N/L work in a browser as Cmd+W/T/R/N/L do on macOS ----------------
 --
--- In a browser Super+W closes the tab and Super+T opens one: the browser is
--- sent its own Ctrl+W / Ctrl+T. Everywhere else the keys keep Omarchy's
--- meaning (close the window; toggle floating). Super+Q still closes the whole
--- window, browser included. To carry another Cmd shortcut over, add a line to
--- browser_keys.
+--   Super+W  close tab        Super+R  reload
+--   Super+T  new tab          Super+N  new window
+--                             Super+L  focus the address bar
+--
+-- The browser is sent its own Ctrl+<key>. Outside a browser W and T keep
+-- Omarchy's meaning (close the window; toggle floating) and the rest do
+-- nothing. Super+Q still closes the whole window, browser included. To carry
+-- another Cmd shortcut over, add a line to browser_keys.
+--
+-- Super+L also gives the address bar back: Ctrl+L itself is taken by the
+-- focus binds above. A key sent from here goes straight to the window and
+-- does not trigger those binds.
 
 -- Web apps (class chrome-<url>-Default) are single-page windows, not browsers.
 local browser_classes = {
@@ -227,13 +234,16 @@ end
 local browser_keys = {
   { key = "W", description = "Close tab (browser) or window", otherwise = hl.dsp.window.close() },
   { key = "T", description = "New tab (browser) or toggle floating", otherwise = hl.dsp.window.float({ action = "toggle" }) },
+  { key = "R", description = "Reload (browser)" },
+  { key = "N", description = "New window (browser)" },
+  { key = "L", description = "Focus address bar (browser)" },
 }
 
 for _, entry in ipairs(browser_keys) do
   o.rebind("SUPER + " .. entry.key, entry.description, function()
     if is_browser(hl.get_active_window()) then
       send_keys("CTRL", entry.key)
-    else
+    elseif entry.otherwise then
       hl.dispatch(entry.otherwise)
     end
   end)
