@@ -81,4 +81,11 @@ if [ "$(getent passwd "$USER" | cut -d: -f7)" != "$ZSH_PATH" ]; then
   sudo chsh -s "$ZSH_PATH" "$USER"
 fi
 
+# Git identity, the same as on the Mac (whose ~/.gitconfig is not tracked).
+# Omarchy's ~/.config/git/config carries no user section, so commits fail
+# until this is set.
+git config --global user.name >/dev/null || git config --global user.name "Joseph Jun"
+git config --global user.email >/dev/null || git config --global user.email "joseph.hyunchol.jun@gmail.com"
+git config --global init.defaultBranch main
+
 echo "==> Arch Linux setup complete!"
