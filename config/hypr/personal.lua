@@ -186,6 +186,59 @@ hl.on("window.title", sync_focus_binds)
 o.personal.focus_poll = hl.timer(sync_focus_binds, { timeout = 2000, type = "repeat" })
 sync_focus_binds()
 
+-- Super+W / Super+T act on browser tabs, as Cmd+W / Cmd+T do on macOS ----------
+--
+-- In a browser Super+W closes the tab and Super+T opens one: the browser is
+-- sent its own Ctrl+W / Ctrl+T. Everywhere else the keys keep Omarchy's
+-- meaning (close the window; toggle floating). Super+Q still closes the whole
+-- window, browser included. To carry another Cmd shortcut over, add a line to
+-- browser_keys.
+
+-- Web apps (class chrome-<url>-Default) are single-page windows, not browsers.
+local browser_classes = {
+  "^google%-chrome",
+  "^chromium",
+  "^brave%-browser",
+  "^firefox",
+  "^zen",
+}
+
+local function is_browser(window)
+  local class = window and window.class or ""
+  for _, pattern in ipairs(browser_classes) do
+    if class:find(pattern) then
+      return true
+    end
+  end
+  return false
+end
+
+-- Sent with explicit modifiers, so the Super still held down is not part of
+-- the chord the app sees. Down and up are split as in Omarchy's
+-- default/hypr/bindings/clipboard.lua, which found send_shortcut can leave
+-- the key repeating.
+local function send_keys(mods, key)
+  hl.dispatch(hl.dsp.send_key_state({ mods = mods, key = key, state = "down" }))
+  hl.timer(function()
+    hl.dispatch(hl.dsp.send_key_state({ mods = mods, key = key, state = "up" }))
+  end, { timeout = 50, type = "oneshot" })
+end
+
+local browser_keys = {
+  { key = "W", description = "Close tab (browser) or window", otherwise = hl.dsp.window.close() },
+  { key = "T", description = "New tab (browser) or toggle floating", otherwise = hl.dsp.window.float({ action = "toggle" }) },
+}
+
+for _, entry in ipairs(browser_keys) do
+  o.rebind("SUPER + " .. entry.key, entry.description, function()
+    if is_browser(hl.get_active_window()) then
+      send_keys("CTRL", entry.key)
+    else
+      hl.dispatch(entry.otherwise)
+    end
+  end)
+end
+
 -- Ctrl+1..0 switches workspace, as on macOS ------------------------------------
 --
 -- Added next to Omarchy's Super+1..0, which keep working. Apps no longer see
