@@ -17,12 +17,13 @@ hl.config({
 
 -- No gaps ---------------------------------------------------------------------
 --
--- Windows meet each other and the screen edges; only the border is left to
+-- Windows meet each other and the screen edges; a one-pixel border is left to
 -- mark the focused one. (The wallpaper is plain black: see scripts/hypr-setup.sh.)
 hl.config({
   general = {
     gaps_in = 0,
     gaps_out = 0,
+    border_size = 1,
   },
 })
 
@@ -159,11 +160,13 @@ for _, entry in ipairs(focus_keys) do
   end, { description = "Focus on " .. entry.name .. " window" })
 end
 
--- The Lua state outlives a config reload, so stop the previous load's timer.
-if o.personal and o.personal.focus_poll then
-  pcall(function()
-    o.personal.focus_poll:set_enabled(false)
-  end)
+-- The Lua state outlives a config reload, so stop the previous load's timers.
+for _, name in ipairs({ "focus_poll", "power_poll" }) do
+  if o.personal and o.personal[name] then
+    pcall(function()
+      o.personal[name]:set_enabled(false)
+    end)
+  end
 end
 
 -- Reachable from `hyprctl eval` for checking and debugging.
@@ -174,6 +177,40 @@ hl.on("window.title", sync_focus_binds)
 -- Starting or leaving tmux in the focused terminal raises no event.
 o.personal.focus_poll = hl.timer(sync_focus_binds, { timeout = 2000, type = "repeat" })
 sync_focus_binds()
+
+-- Plugged in: never idle --------------------------------------------------------
+--
+-- Omarchy starts a screensaver after 2.5 idle minutes and locks (display off)
+-- after 5, on battery and on mains alike. On mains this switches its "stay
+-- awake" state on, which stops both; on battery it switches it back off. The
+-- power profile saved for that source is applied at the same time.
+-- Super+Ctrl+I still toggles staying awake by hand until the next change.
+
+local function on_mains()
+  for _, name in ipairs({ "AC", "AC0", "ACAD", "ADP0", "ADP1" }) do
+    local online = read_file("/sys/class/power_supply/" .. name .. "/online")
+    if online ~= "" then
+      return online:find("1", 1, true) ~= nil
+    end
+  end
+  return false -- No adapter to read (a desktop): leave idling as it is.
+end
+
+local last_mains = nil
+
+local function sync_power()
+  local mains = on_mains()
+  if mains == last_mains then
+    return
+  end
+  last_mains = mains
+
+  hl.exec_cmd("omarchy-toggle-idle " .. (mains and "stay-awake" or "allow-idle"))
+  hl.exec_cmd("omarchy-powerprofiles-set autodetect")
+end
+
+o.personal.power_poll = hl.timer(sync_power, { timeout = 5000, type = "repeat" })
+sync_power()
 
 -- Window placement, after the Raycast shortcuts on the Mac --------------------
 --
