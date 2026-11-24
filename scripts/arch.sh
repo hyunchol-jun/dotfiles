@@ -68,6 +68,7 @@ if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
     obsidian \
     intellij-idea-community-edition \
     dbeaver
+  "$(dirname "${BASH_SOURCE[0]}")/chrome.sh"
 fi
 
 # Keyboard remaps (the Linux counterpart of Karabiner on the Mac)

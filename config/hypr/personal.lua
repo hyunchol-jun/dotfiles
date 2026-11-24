@@ -428,8 +428,19 @@ o.bind("SHIFT + ALT + RIGHT", "Move window to right monitor", o.workspaces.move_
 -- switched off once the first matching window has opened (or after a minute),
 -- so windows opened later land on whatever workspace is in view.
 
-function o.personal.open_on_workspace(class, workspace, command)
+-- `class` is a regex for the window rule; `patterns` are Lua patterns for the
+-- same classes (Lua has no alternation), used to spot the window opening.
+function o.personal.open_on_workspace(class, patterns, workspace, command)
   local rule = hl.window_rule({ match = { class = class }, workspace = workspace .. " silent" })
+
+  local function matches(window_class)
+    for _, pattern in ipairs(patterns) do
+      if window_class:find(pattern) then
+        return true
+      end
+    end
+    return false
+  end
   local pending = true
 
   local function done()
@@ -440,7 +451,7 @@ function o.personal.open_on_workspace(class, workspace, command)
   end
 
   hl.on("window.open", function(window)
-    if pending and window and (window.class or ""):find(class) then
+    if pending and window and matches(window.class or "") then
       -- Leave the rule on for a moment: it is applied as the window maps.
       hl.timer(done, { timeout = 2000, type = "oneshot" })
     end
@@ -452,9 +463,9 @@ end
 
 -- Try it without a reboot: hyprctl eval 'o.personal.startup_layout()'
 function o.personal.startup_layout()
-  o.personal.open_on_workspace("org.omarchy.terminal", 1, "omarchy-launch-terminal")
-  -- Follows the default browser (omarchy default browser <name>).
-  o.personal.open_on_workspace("(chromium|google-chrome.*)", 2, "omarchy-launch-browser")
+  o.personal.open_on_workspace("org\\.omarchy\\.terminal", { "^org%.omarchy%.terminal$" }, 1, "omarchy-launch-terminal")
+  -- Follows the default browser (scripts/chrome.sh makes that Chrome).
+  o.personal.open_on_workspace("(chromium|google-chrome.*)", { "^chromium$", "^google%-chrome" }, 2, "omarchy-launch-browser")
 end
 
 hl.on("hyprland.start", o.personal.startup_layout)

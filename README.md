@@ -42,6 +42,7 @@ On [Omarchy](https://omarchy.org) the same command also sets up the desktop:
 | Omarchy's own nvim, ghostty and tmux configs moved to `~/.config-omarchy-backup` | `scripts/omarchy-prepare.sh` |
 | Configs linked one tool at a time into the existing `~/.config` | Linux block of `install.conf.yaml` |
 | Hyprland: natural scrolling, no gaps, 1px border, no animations, always tiling, Ctrl+h/j/k/l focus across Neovim, tmux and app windows, Ctrl+1..0 workspaces, Alt+h/j/k/l/m/c window placement, terminal and browser opened on workspaces 1 and 2 at startup, no idling while plugged in | `config/hypr/personal.lua` |
+| Google Chrome installed and set as the default browser | `scripts/chrome.sh` |
 | Black wallpaper, kept across theme changes | `omarchy/`, `scripts/hypr-setup.sh` |
 
 After editing `config/hypr/personal.lua` run `hyprctl reload`; after editing
