@@ -44,6 +44,8 @@ On [Omarchy](https://omarchy.org) the same command also sets up the desktop:
 | Hyprland: natural scrolling, no gaps, 1px border, no animations, always tiling, Ctrl+h/j/k/l focus across Neovim, tmux and app windows, Ctrl+1..0 workspaces, Alt+h/j/k/l/m/c window placement, terminal and browser opened on workspaces 1 and 2 at startup, no idling while plugged in | `config/hypr/personal.lua` |
 | Google Chrome installed and set as the default browser, Chromium removed | `scripts/chrome.sh` |
 | Black wallpaper, kept across theme changes | `omarchy/`, `scripts/hypr-setup.sh` |
+| Tailscale daemon enabled and the machine joined to the tailnet (prints a login link to approve) | `scripts/arch.sh` |
+| SSH key generated for the `mini1`/`mini2` aliases; hand it to the minis by running `scripts/trust-machine.sh user@host` on the MacBook | `scripts/arch.sh`, `scripts/trust-machine.sh` |
 
 After editing `config/hypr/personal.lua` run `hyprctl reload`; after editing
 `keyd/default.conf` run `scripts/keyd.sh`.

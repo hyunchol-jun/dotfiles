@@ -74,12 +74,33 @@ fi
 # Keyboard remaps (the Linux counterpart of Karabiner on the Mac)
 "$(dirname "${BASH_SOURCE[0]}")/keyd.sh"
 
-# Tailscale: the package only installs the daemon. Start it now and on boot;
-# joining the tailnet is a one-time `sudo tailscale up` by hand (it prints a
-# login link).
+# Tailscale: start the daemon now and on boot, then join the tailnet. Joining
+# prints a login link and waits for it to be approved in a browser (any
+# machine's will do), so it is skipped when there is no terminal to show it.
+# --operator lets later `tailscale` commands run without sudo.
 if ! systemctl is-enabled --quiet tailscaled 2>/dev/null; then
   echo "==> Enabling tailscaled..."
   sudo systemctl enable --now tailscaled
+fi
+if tailscale status &>/dev/null; then
+  echo "==> Tailscale already connected"
+elif [ -t 0 ]; then
+  echo "==> Joining the tailnet (open the link below to approve this machine)..."
+  sudo tailscale up --operator="$USER"
+else
+  echo "==> Skipping the Tailscale login (run: sudo tailscale up --operator=$USER)"
+fi
+
+# SSH key: what the mini1/mini2 aliases in zshrc log in with. A new key opens
+# nothing until a machine the minis already trust hands it to them, so the
+# command for that is printed.
+SSH_KEY="$HOME/.ssh/id_ed25519"
+if [ ! -f "$SSH_KEY" ]; then
+  echo "==> Generating an SSH key..."
+  mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+  ssh-keygen -q -t ed25519 -N "" -C "$USER@$(uname -n)" -f "$SSH_KEY"
+  echo "    To let this machine into mini1 and mini2, run on a machine they trust:"
+  echo "      ~/dotfiles/scripts/trust-machine.sh $USER@<this machine's address>"
 fi
 
 # zsh as the login shell
