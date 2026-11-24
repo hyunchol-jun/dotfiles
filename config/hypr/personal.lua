@@ -121,8 +121,38 @@ local function read_file(path)
   return content
 end
 
+-- The PIDs a process started. /proc/<pid>/task/<tid>/children lists only the
+-- children forked by that one thread, and a terminal such as Ghostty starts its
+-- shells from a worker thread, so its main thread's list misses them. Read
+-- every thread's list for the terminal itself (depth 0); that needs one `ls`
+-- since plain Lua cannot list a directory. The shells and programs below it
+-- fork from their main thread, so for them one read is enough and nothing is
+-- spawned.
+local function child_pids(pid, all_threads)
+  local tids = { pid }
+  if all_threads then
+    local pipe = io.popen("ls /proc/" .. pid .. "/task 2>/dev/null", "r")
+    if pipe then
+      local listing = pipe:read("*a") or ""
+      pipe:close()
+      tids = {}
+      for tid in listing:gmatch("%d+") do
+        tids[#tids + 1] = tid
+      end
+    end
+  end
+
+  local children = {}
+  for _, tid in ipairs(tids) do
+    for child in read_file("/proc/" .. pid .. "/task/" .. tid .. "/children"):gmatch("%d+") do
+      children[#children + 1] = child
+    end
+  end
+  return children
+end
+
 -- Whether the process or anything it started is one of key_users. Walks
--- /proc, which costs a few small reads and no process spawn.
+-- /proc, which costs a few small reads and one `ls` (see child_pids).
 local function runs_key_user(pid, depth)
   depth = depth or 0
   if depth > 8 then
@@ -136,7 +166,7 @@ local function runs_key_user(pid, depth)
     end
   end
 
-  for child in read_file("/proc/" .. pid .. "/task/" .. pid .. "/children"):gmatch("%d+") do
+  for _, child in ipairs(child_pids(pid, depth == 0)) do
     if runs_key_user(child, depth + 1) then
       return true
     end
