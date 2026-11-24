@@ -6,11 +6,14 @@
 
 -- Input ----------------------------------------------------------------------
 
--- Natural scrolling on the trackpad, matching macOS.
+-- Natural scrolling on the trackpad, matching macOS. Omarchy scrolls at 0.4
+-- of libinput's speed, which is still fast on the ThinkPad's trackpad; lower
+-- is slower.
 hl.config({
   input = {
     touchpad = {
       natural_scroll = true,
+      scroll_factor = 0.25,
     },
   },
 })
