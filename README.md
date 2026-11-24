@@ -118,7 +118,7 @@ This gives you a structure like:
 ~/path/to/repo.git/main/  # main branch worktree
 ```
 
-New worktrees created via `wt new` or `:WorktreeCreate` will appear as siblings (e.g. `~/path/to/repo.git/feature-branch/`).
+New worktrees created via `wt new` or `:WorktreeCreate` will appear as siblings (e.g. `~/path/to/repo.git/feature-branch/`). For a plain (non-bare) repo at `~/path/to/repo`, they go in `~/path/to/repo.worktrees/<branch>/` beside it.
 
 ### Project-specific config
 

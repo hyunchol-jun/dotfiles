@@ -6,8 +6,9 @@
 # agents (the `wt` skill). Run it from anywhere inside the repo, or pass -C.
 #
 #   wt new <branch> [options]     create the worktree + its tmux window
-#       --path DIR                worktree location (default: sibling of main,
-#                                 named after the branch)
+#       --path DIR                worktree location (default: inside a bare
+#                                 repo, <repo>/<branch>; for a plain repo,
+#                                 <repo>.worktrees/<branch> beside it)
 #       --base REF                start point for a NEW branch (default: HEAD)
 #       --reuse                   allow an existing branch that is behind the
 #                                 default branch (otherwise: exit 3)
@@ -249,8 +250,16 @@ remove_fast() {
   trash="$path.deleting-$(date +%s)"
   mv "$path" "$trash" || die "could not move $path aside"
   git worktree prune
-  rmdir "$(dirname "$path")" 2>/dev/null || true   # drop an emptied feat/ or fix/ parent
-  ( nohup rm -rf "$trash" >/dev/null 2>&1 & )
+  local parent; parent=$(dirname "$path")
+  # In the background: delete the moved copy, then drop an emptied feat/ or fix/
+  # parent, and a plain repo's <repo>.worktrees/ folder once its last worktree is
+  # gone. The moved copy sits in that parent, so the parent empties only then.
+  # shellcheck disable=SC2016
+  ( nohup sh -c '
+      rm -rf "$1"
+      rmdir "$2" 2>/dev/null
+      case $(dirname "$2") in *.worktrees) rmdir "$(dirname "$2")" 2>/dev/null ;; esac
+    ' sh "$trash" "$parent" >/dev/null 2>&1 & )
 }
 
 # kill_ids <id>...: close the windows or sessions tmux_ids found. The one wt
@@ -297,11 +306,12 @@ cmd_new() {
   [ -z "$prompt_file" ] || [ -r "$prompt_file" ] || die "cannot read $prompt_file"
 
   if [ -z "$path" ]; then
-    # bare repo: worktrees live inside it; otherwise next to the main worktree
+    # bare repo: worktrees live inside it; otherwise in <repo>.worktrees/ next to
+    # the main worktree, so branches of two repos in one folder cannot collide
     if [ "$(git -C "$COMMON" rev-parse --is-bare-repository)" = true ] || [ -z "$MAIN_PATH" ]; then
       path="$COMMON/$branch"
     else
-      path="$(dirname "$MAIN_PATH")/$branch"
+      path="$(dirname "$MAIN_PATH")/$PROJECT.worktrees/$branch"
     fi
   fi
   path_of_branch "$branch" >/dev/null && die "branch '$branch' already has a worktree at $(path_of_branch "$branch") (use: wt open $branch)"
