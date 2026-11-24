@@ -66,6 +66,9 @@
     ~/.config/hypr/personal.lua:
       path: config/hypr/personal.lua
       if: '[ "$(uname -s)" = Linux ]'
+    ~/.config/omarchy/hooks/theme-set.d/50-black-background:
+      path: omarchy/black-background-hook
+      if: '[ "$(uname -s)" = Linux ] && [ -d ~/.config/omarchy ]'
     ~/.agents/skills/:
       glob: true
       path: .agents/skills/*

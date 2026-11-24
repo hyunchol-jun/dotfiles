@@ -1,0 +1,5 @@
+#!/bin/bash
+# Omarchy theme-set hook, linked by Dotbot to
+# ~/.config/omarchy/hooks/theme-set.d/50-black-background.
+# A theme change puts that theme's wallpaper back; keep the plain black one.
+omarchy-theme-bg-set "$HOME/dotfiles/omarchy/black.png" >/dev/null 2>&1 || true

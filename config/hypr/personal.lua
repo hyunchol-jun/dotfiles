@@ -15,6 +15,17 @@ hl.config({
   },
 })
 
+-- No gaps ---------------------------------------------------------------------
+--
+-- Windows meet each other and the screen edges; only the border is left to
+-- mark the focused one. (The wallpaper is plain black: see scripts/hypr-setup.sh.)
+hl.config({
+  general = {
+    gaps_in = 0,
+    gaps_out = 0,
+  },
+})
+
 -- No animations ---------------------------------------------------------------
 --
 -- Windows, workspaces and layers change instantly.
