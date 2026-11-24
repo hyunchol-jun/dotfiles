@@ -74,6 +74,14 @@ fi
 # Keyboard remaps (the Linux counterpart of Karabiner on the Mac)
 "$(dirname "${BASH_SOURCE[0]}")/keyd.sh"
 
+# Tailscale: the package only installs the daemon. Start it now and on boot;
+# joining the tailnet is a one-time `sudo tailscale up` by hand (it prints a
+# login link).
+if ! systemctl is-enabled --quiet tailscaled 2>/dev/null; then
+  echo "==> Enabling tailscaled..."
+  sudo systemctl enable --now tailscaled
+fi
+
 # zsh as the login shell
 ZSH_PATH="$(command -v zsh)"
 if [ "$(getent passwd "$USER" | cut -d: -f7)" != "$ZSH_PATH" ]; then
