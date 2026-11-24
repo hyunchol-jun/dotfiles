@@ -18,12 +18,14 @@ hl.config({
 -- Ctrl+h/j/k/l moves focus between windows ------------------------------------
 --
 -- One set of keys walks through Neovim splits, tmux panes and app windows:
---   * In a terminal the binds below are switched off, so the keys reach tmux
---     and Neovim untouched. At their outer edge those call ~/dotfiles/bin/nav,
---     which asks Hyprland to focus the next window (see tmux/hypr-nav.conf and
---     config/nvim/lua/custom/plugins/tmux-navigator.lua).
---   * Everywhere else Hyprland takes the keys itself. Apps lose their own
---     Ctrl+H/J/K/L (in Chromium: history, downloads, link search, address bar).
+--   * A terminal running tmux or Neovim keeps the keys: the binds below are
+--     switched off while it is focused. At their outer edge tmux and Neovim
+--     call ~/dotfiles/bin/nav, which asks Hyprland to focus the next window
+--     (see tmux/hypr-nav.conf and config/nvim/lua/custom/plugins/tmux-navigator.lua).
+--   * Everywhere else, a terminal at a plain shell included, Hyprland takes
+--     the keys itself. Apps lose their own Ctrl+H/J/K/L (in Chromium: history,
+--     downloads, link search, address bar; in a shell: backspace, newline,
+--     kill-line, clear), as shells inside tmux already do.
 
 local terminal_classes = {
   "^Alacritty$",
@@ -37,10 +39,6 @@ local terminal_classes = {
 }
 
 local function is_terminal(window)
-  if not window then
-    return false
-  end
-
   -- Omarchy tags terminals in default/hypr/apps/terminals.lua.
   local tags = window.tags
   if type(tags) == "table" then
@@ -63,6 +61,48 @@ local function is_terminal(window)
   return false
 end
 
+-- Programs that use Ctrl+h/j/k/l themselves. ssh and mosh count because the
+-- far end is usually tmux; nothing hands focus back out of those.
+local key_users = { "^tmux: client$", "^n?vim$", "^view$", "^fzf$", "^ssh$", "^mosh%-client$" }
+
+local function read_file(path)
+  local file = io.open(path, "r")
+  if not file then
+    return ""
+  end
+  local content = file:read("*a") or ""
+  file:close()
+  return content
+end
+
+-- Whether the process or anything it started is one of key_users. Walks
+-- /proc, which costs a few small reads and no process spawn.
+local function runs_key_user(pid, depth)
+  depth = depth or 0
+  if depth > 8 then
+    return false
+  end
+
+  local name = read_file("/proc/" .. pid .. "/comm"):gsub("%s+$", "")
+  for _, pattern in ipairs(key_users) do
+    if name:find(pattern) then
+      return true
+    end
+  end
+
+  for child in read_file("/proc/" .. pid .. "/task/" .. pid .. "/children"):gmatch("%d+") do
+    if runs_key_user(child, depth + 1) then
+      return true
+    end
+  end
+
+  return false
+end
+
+local function window_keeps_keys(window)
+  return window ~= nil and window.pid ~= nil and is_terminal(window) and runs_key_user(window.pid)
+end
+
 local focus_keys = {
   { key = "H", direction = "l", name = "left" },
   { key = "J", direction = "d", name = "below" },
@@ -71,26 +111,40 @@ local focus_keys = {
 }
 
 local focus_binds = {}
-for _, entry in ipairs(focus_keys) do
-  focus_binds[#focus_binds + 1] = hl.bind(
-    "CTRL + " .. entry.key,
-    hl.dsp.focus({ direction = entry.direction }),
-    { description = "Focus on " .. entry.name .. " window" }
-  )
-end
 
-local function sync_focus_binds(window)
-  local enabled = not is_terminal(window)
+local function sync_focus_binds()
+  local enabled = not window_keeps_keys(hl.get_active_window())
   for _, bind in ipairs(focus_binds) do
     bind:set_enabled(enabled)
   end
+  return enabled
 end
 
-hl.on("window.active", sync_focus_binds)
-sync_focus_binds(hl.get_active_window())
+for _, entry in ipairs(focus_keys) do
+  focus_binds[#focus_binds + 1] = hl.bind("CTRL + " .. entry.key, function()
+    -- tmux or Neovim may have started since the last check; from the next
+    -- press on the keys are theirs.
+    if sync_focus_binds() then
+      hl.dispatch(hl.dsp.focus({ direction = entry.direction }))
+    end
+  end, { description = "Focus on " .. entry.name .. " window" })
+end
+
+-- The Lua state outlives a config reload, so stop the previous load's timer.
+if o.personal and o.personal.focus_poll then
+  pcall(function()
+    o.personal.focus_poll:set_enabled(false)
+  end)
+end
 
 -- Reachable from `hyprctl eval` for checking and debugging.
-o.personal = { focus_binds = focus_binds }
+o.personal = { focus_binds = focus_binds, window_keeps_keys = window_keeps_keys }
+
+hl.on("window.active", sync_focus_binds)
+hl.on("window.title", sync_focus_binds)
+-- Starting or leaving tmux in the focused terminal raises no event.
+o.personal.focus_poll = hl.timer(sync_focus_binds, { timeout = 2000, type = "repeat" })
+sync_focus_binds()
 
 -- Window placement, after the Raycast shortcuts on the Mac --------------------
 --
