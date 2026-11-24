@@ -67,7 +67,8 @@ if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
   yay -S --needed --noconfirm \
     obsidian \
     intellij-idea-community-edition \
-    dbeaver
+    dbeaver \
+    slack-desktop
   "$(dirname "${BASH_SOURCE[0]}")/chrome.sh"
 fi
 
