@@ -35,6 +35,11 @@ for mini in "${MINIS[@]}"; do
       if grep -qxF "$key" ~/.ssh/authorized_keys; then
         echo "already trusted"
       else
+        # A file whose last line has no newline would swallow the new key
+        # into that line, where sshd never sees it.
+        if [ -s ~/.ssh/authorized_keys ] && [ -n "$(tail -c1 ~/.ssh/authorized_keys)" ]; then
+          echo >> ~/.ssh/authorized_keys
+        fi
         printf "%s\n" "$key" >> ~/.ssh/authorized_keys && echo "added"
       fi'; then
     echo "  ^ $mini"
