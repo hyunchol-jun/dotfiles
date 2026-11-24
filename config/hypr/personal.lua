@@ -18,10 +18,10 @@ hl.config({
 -- Display scale ---------------------------------------------------------------
 --
 -- Omarchy's "auto" picks 1.5 for the ThinkPad's 14" 1920x1080 panel, which
--- leaves a 1280x720 desktop. 1 is the unscaled 1920x1080. Hyprland only takes scales
--- that divide the resolution evenly: 1, 1.2 (1600x900), 1.25 (1536x864), 1.5.
+-- leaves a 1280x720 desktop. 1.2 gives 1600x900. Hyprland only takes scales
+-- that divide the resolution evenly: 1 (1920x1080), 1.2, 1.25 (1536x864), 1.5.
 -- Named by output, so external monitors keep "auto".
-hl.monitor({ output = "eDP-1", mode = "preferred", position = "auto", scale = 1 })
+hl.monitor({ output = "eDP-1", mode = "preferred", position = "auto", scale = 1.2 })
 
 -- No gaps ---------------------------------------------------------------------
 --
