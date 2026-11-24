@@ -26,10 +26,10 @@ hl.config({
 -- Named by output, so other monitors keep "auto".
 hl.monitor({ output = "eDP-1", mode = "preferred", position = "auto", scale = 1.2 })
 
--- The 32" LG 4K: "auto" leaves it unscaled, with small text. 1.25 gives a
--- 3072x1728 desktop; 1.5 would give 2560x1440 and 2 gives 1920x1080. Matched
+-- The 32" LG 4K: "auto" leaves it unscaled, with small text. 1.5 gives a
+-- 2560x1440 desktop; 1.25 would give 3072x1728 and 2 gives 1920x1080. Matched
 -- by its name, not the port, so it holds on any connector or dock.
-hl.monitor({ output = "desc:LG Electronics LG HDR 4K", mode = "preferred", position = "auto", scale = 1.25 })
+hl.monitor({ output = "desc:LG Electronics LG HDR 4K", mode = "preferred", position = "auto", scale = 1.5 })
 
 -- No gaps ---------------------------------------------------------------------
 --
