@@ -66,7 +66,6 @@ if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
   sudo pacman -S --needed --noconfirm ghostty
   yay -S --needed --noconfirm \
     obsidian \
-    intellij-idea-community-edition \
     dbeaver \
     slack-desktop
   "$(dirname "${BASH_SOURCE[0]}")/chrome.sh"
