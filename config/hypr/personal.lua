@@ -15,6 +15,15 @@ hl.config({
   },
 })
 
+-- No animations ---------------------------------------------------------------
+--
+-- Windows, workspaces and layers change instantly.
+hl.config({
+  animations = {
+    enabled = false,
+  },
+})
+
 -- Always tile ------------------------------------------------------------------
 --
 -- Omarchy's Super+L cycles a workspace through tiling, scrolling and floating
