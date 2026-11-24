@@ -495,6 +495,57 @@ o.bind("ALT + C", "Center window at half width", placing(place.center))
 o.bind("SHIFT + ALT + LEFT", "Move window to left monitor", o.workspaces.move_window_to_monitor("l"))
 o.bind("SHIFT + ALT + RIGHT", "Move window to right monitor", o.workspaces.move_window_to_monitor("r"))
 
+-- O-Launcher: hold o, tap a letter, and that app comes forward ------------------
+--
+--   o+t  terminal (Ghostty)      o+c  Chrome      o+s  Slack
+--
+-- The Mac's Karabiner rule of the same name. keyd turns o+<letter> into
+-- Ctrl+Alt+Super+Shift+<letter> (keyd/default.conf, which also explains when o
+-- is still just a letter) and the binds here do the rest: focus the app's most
+-- recently used window, or start the app when it has none. Add an app in both
+-- files; re-run scripts/keyd.sh after editing the keyd one.
+
+local launcher_apps = {
+  { key = "T", name = "Terminal", classes = { "^com%.mitchellh%.ghostty$", "^org%.omarchy%.terminal$" }, command = "omarchy-launch-terminal" },
+  -- Not chrome-<url>-Default, which is a web app window.
+  { key = "C", name = "Chrome", classes = { "^google%-chrome$" }, command = "omarchy-launch-browser" },
+  { key = "S", name = "Slack", classes = { "^[Ss]lack$" }, command = o.launch("slack") },
+}
+
+local function focus_or_launch(app)
+  local best
+  for _, window in ipairs(hl.get_windows()) do
+    local class = window.class or ""
+    for _, pattern in ipairs(app.classes) do
+      -- focus_history_id counts up from 0, the window focused last.
+      if class:find(pattern) and (not best or window.focus_history_id < best.focus_history_id) then
+        best = window
+      end
+    end
+  end
+
+  if best then
+    hl.dispatch(hl.dsp.focus({ window = target(best) }))
+  else
+    hl.exec_cmd(app.command)
+  end
+end
+
+-- Try one without the keyboard: hyprctl eval 'o.personal.launch("C")'
+function o.personal.launch(key)
+  for _, app in ipairs(launcher_apps) do
+    if app.key == key then
+      focus_or_launch(app)
+    end
+  end
+end
+
+for _, app in ipairs(launcher_apps) do
+  o.bind("CTRL + ALT + SUPER + SHIFT + " .. app.key, "Go to " .. app.name .. " (o+" .. app.key:lower() .. ")", function()
+    focus_or_launch(app)
+  end)
+end
+
 -- Startup layout: terminal on workspace 1, browser on workspace 2 --------------
 --
 -- The launchers hand their app to systemd, so Hyprland cannot follow the

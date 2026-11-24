@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Linux counterpart of the Mac's Karabiner setup: install keyd and apply
-# keyd/default.conf (Caps Lock = Escape when tapped, Control when held).
+# keyd/default.conf (Caps Lock = Escape when tapped, Control when held; the
+# O-Launcher on o+letter).
 # Safe to re-run; re-run it after editing keyd/default.conf.
 set -euo pipefail
 
@@ -19,4 +20,4 @@ fi
 
 sudo systemctl enable --now keyd
 sudo keyd reload
-echo "==> keyd active: Caps Lock is Escape (tap) / Control (hold)"
+echo "==> keyd active: Caps Lock is Escape (tap) / Control (hold); o+t/c/s is the O-Launcher"
