@@ -73,6 +73,9 @@ fi
 # Keyboard remaps (the Linux counterpart of Karabiner on the Mac)
 "$(dirname "${BASH_SOURCE[0]}")/keyd.sh"
 
+# Lid closed on mains power keeps the machine running
+"$(dirname "${BASH_SOURCE[0]}")/lid.sh"
+
 # zsh as the login shell
 ZSH_PATH="$(command -v zsh)"
 if [ "$(getent passwd "$USER" | cut -d: -f7)" != "$ZSH_PATH" ]; then
