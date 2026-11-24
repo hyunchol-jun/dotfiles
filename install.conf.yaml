@@ -21,6 +21,7 @@
     ~/bin/dev-up: bin/dev-up
     ~/bin/wt: bin/wt
     ~/bin/tmux-split: bin/tmux-split
+    ~/bin/nav: bin/nav
     ~/.claude/commands: .claude/commands
     ~/.claude/skills:
       path: .agents/skills
@@ -62,6 +63,9 @@
     ~/.config/htop:
       path: config/htop
       if: '[ "$(uname -s)" = Linux ]'
+    ~/.config/hypr/personal.lua:
+      path: config/hypr/personal.lua
+      if: '[ "$(uname -s)" = Linux ]'
     ~/.agents/skills/:
       glob: true
       path: .agents/skills/*
@@ -75,3 +79,4 @@
     - [git submodule update --init --recursive, Installing submodules]
     - [sh scripts/codex-appserver-setup.sh, Codex app-server agent (any Mac with codex)]
     - [sh scripts/link-codex-skills.sh, Linking agent skills into Codex]
+    - [sh scripts/hypr-setup.sh, Hooking personal settings into Hyprland (Omarchy only)]

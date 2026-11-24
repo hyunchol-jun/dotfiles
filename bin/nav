@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# nav <h|j|k|l> [tmux-pane-id]
+#
+# The outer hops of Ctrl+h/j/k/l navigation. Neovim calls this from its last
+# split and tmux from a pane that is not running Neovim: move to the next tmux
+# pane if there is one in that direction, otherwise ask Hyprland to focus the
+# next window. Without Hyprland the last step does nothing.
+# See config/hypr/personal.lua for the whole picture.
+set -u
+
+case "${1:-}" in
+  h) tmux_flag=L edge=left   wm=l ;;
+  j) tmux_flag=D edge=bottom wm=d ;;
+  k) tmux_flag=U edge=top    wm=u ;;
+  l) tmux_flag=R edge=right  wm=r ;;
+  *) echo "usage: nav <h|j|k|l> [tmux-pane-id]" >&2; exit 2 ;;
+esac
+
+pane="${2:-${TMUX_PANE:-}}"
+if [ -n "$pane" ]; then
+  # A zoomed pane fills its window, so it counts as being at every edge.
+  state=$(tmux display-message -p -t "$pane" "#{pane_at_${edge}}#{window_zoomed_flag}" 2>/dev/null)
+  if [ "$state" = "00" ]; then
+    exec tmux select-pane -t "$pane" "-$tmux_flag"
+  fi
+fi
+
+command -v hyprctl >/dev/null 2>&1 || exit 0
+
+# A tmux server started over ssh or before the desktop has no (or a stale)
+# Hyprland socket in its environment, so find the running instance.
+runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+if [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || [ ! -d "$runtime/hypr/$HYPRLAND_INSTANCE_SIGNATURE" ]; then
+  HYPRLAND_INSTANCE_SIGNATURE=$(ls -t "$runtime/hypr" 2>/dev/null | head -1)
+  export HYPRLAND_INSTANCE_SIGNATURE
+fi
+[ -n "$HYPRLAND_INSTANCE_SIGNATURE" ] || exit 0
+
+hyprctl dispatch "hl.dsp.focus({ direction = \"$wm\" })" >/dev/null 2>&1
