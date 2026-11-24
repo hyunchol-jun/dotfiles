@@ -92,6 +92,206 @@ sync_focus_binds(hl.get_active_window())
 -- Reachable from `hyprctl eval` for checking and debugging.
 o.personal = { focus_binds = focus_binds }
 
+-- Window placement, after the Raycast shortcuts on the Mac --------------------
+--
+--   Alt+H/J/K/L        left / bottom / top / right half
+--   Alt+M              maximize
+--   Alt+C              centered at half the screen width
+--   Shift+Alt+←/→      move the window to the monitor on that side
+--
+-- Hyprland tiles, so a "half" depends on what else is on the workspace:
+--   * A window tiled next to others moves that way inside the tiling, which
+--     with two windows puts it on that half.
+--   * A window alone on its workspace (or already floating) has no tiling to
+--     move in, so it floats and snaps to that half, as on the Mac. The same
+--     happens when the tiling cannot give that half (three or more windows).
+-- Alt+M puts a floating window back into the tiling and makes it fill the
+-- workspace; pressed again on a tiled window it toggles the maximize off.
+
+local function target(window)
+  return "address:" .. window.address
+end
+
+-- The part of the window's monitor that a tiled window may cover, in the
+-- layout's coordinates: inside the bar, the outer gaps and the border.
+local function usable_area(window)
+  local monitor = window.monitor or hl.get_active_monitor()
+  local scale = monitor.scale or 1
+  local reserved = type(monitor.reserved) == "table" and monitor.reserved or {}
+  local gaps = hl.get_config("general.gaps_out")
+  local border = tonumber(hl.get_config("general.border_size")) or 0
+
+  local function inset(side)
+    local gap = type(gaps) == "table" and gaps[side] or tonumber(gaps) or 0
+    return (reserved[side] or 0) + gap + border
+  end
+
+  return {
+    x = monitor.x + inset("left"),
+    y = monitor.y + inset("top"),
+    w = monitor.width / scale - inset("left") - inset("right"),
+    h = monitor.height / scale - inset("top") - inset("bottom"),
+  }
+end
+
+-- Space left between two halves, to match the gap between tiled windows.
+local function seam()
+  local gaps = hl.get_config("general.gaps_in")
+  local gap = type(gaps) == "table" and gaps.left or tonumber(gaps) or 0
+  local border = tonumber(hl.get_config("general.border_size")) or 0
+  return 2 * (gap + border)
+end
+
+local function tiled_neighbours(window)
+  local count = 0
+  if window.workspace then
+    for _, other in ipairs(hl.get_workspace_windows(tostring(window.workspace.id))) do
+      if not other.floating and other.address ~= window.address then
+        count = count + 1
+      end
+    end
+  end
+  return count
+end
+
+local function leave_fullscreen(window)
+  if window.fullscreen and window.fullscreen ~= 0 then
+    hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "unset", window = target(window) }))
+  end
+end
+
+local function float_at(window, x, y, w, h)
+  local address = target(window)
+  if not window.floating then
+    hl.dispatch(hl.dsp.window.float({ action = "on", window = address }))
+  end
+  hl.dispatch(hl.dsp.window.resize({ x = math.floor(w), y = math.floor(h), window = address }))
+  hl.dispatch(hl.dsp.window.move({ x = math.floor(x), y = math.floor(y), window = address }))
+end
+
+local place = {}
+
+-- Whether the window already sits against that edge without spanning the area.
+local function on_half(window, area, direction)
+  local at, size = window.at, window.size
+  local near = function(a, b)
+    return math.abs(a - b) <= 2
+  end
+
+  if direction == "l" then
+    return near(at.x, area.x) and size.x < area.w - 2
+  elseif direction == "r" then
+    return near(at.x + size.x, area.x + area.w) and size.x < area.w - 2
+  elseif direction == "u" then
+    return near(at.y, area.y) and size.y < area.h - 2
+  else
+    return near(at.y + size.y, area.y + area.h) and size.y < area.h - 2
+  end
+end
+
+local function snap_half(window, area, direction)
+  local half_w, half_h = (area.w - seam()) / 2, (area.h - seam()) / 2
+  if direction == "l" then
+    float_at(window, area.x, area.y, half_w, area.h)
+  elseif direction == "r" then
+    float_at(window, area.x + area.w - half_w, area.y, half_w, area.h)
+  elseif direction == "u" then
+    float_at(window, area.x, area.y, area.w, half_h)
+  else
+    float_at(window, area.x, area.y + area.h - half_h, area.w, half_h)
+  end
+end
+
+function place.half(direction, window)
+  window = window or hl.get_active_window()
+  if not window then
+    return
+  end
+  leave_fullscreen(window)
+
+  local area = usable_area(window)
+  local neighbours = tiled_neighbours(window)
+  if window.floating or neighbours == 0 then
+    snap_half(window, area, direction)
+    return
+  end
+
+  -- Tiled next to others: rearrange the tiling. Window objects are live, so
+  -- on_half sees the result of each step straight away.
+  if on_half(window, area, direction) then
+    return
+  end
+
+  hl.dispatch(hl.dsp.window.move({ direction = direction, window = target(window) }))
+  if on_half(window, area, direction) then
+    return
+  end
+
+  -- Two windows split the other way (side by side when asked for top/bottom,
+  -- or stacked when asked for left/right): turn the split, then pick the side.
+  local active = hl.get_active_window()
+  local layout = window.workspace and window.workspace.tiled_layout
+  if neighbours == 1 and layout == "dwindle" and active and active.address == window.address then
+    hl.dispatch(hl.dsp.layout("togglesplit"))
+    if not on_half(window, area, direction) then
+      hl.dispatch(hl.dsp.window.move({ direction = direction, window = target(window) }))
+    end
+    if on_half(window, area, direction) then
+      return
+    end
+  end
+
+  -- No tiled arrangement gives that half (three or more windows, or another
+  -- layout), so take it as a floating window.
+  snap_half(window, area, direction)
+end
+
+function place.maximize(window)
+  window = window or hl.get_active_window()
+  if not window then
+    return
+  end
+
+  local address = target(window)
+  if window.floating then
+    leave_fullscreen(window)
+    hl.dispatch(hl.dsp.window.float({ action = "off", window = address }))
+    if tiled_neighbours(window) > 0 then
+      hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "set", window = address }))
+    end
+  else
+    hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle", window = address }))
+  end
+end
+
+function place.center(window)
+  window = window or hl.get_active_window()
+  if not window then
+    return
+  end
+  leave_fullscreen(window)
+
+  local area = usable_area(window)
+  float_at(window, area.x + area.w / 4, area.y, area.w / 2, area.h)
+end
+
+o.personal.place = place
+
+local function placing(fn, argument)
+  return function()
+    fn(argument)
+  end
+end
+
+o.bind("ALT + H", "Window to left half", placing(place.half, "l"))
+o.bind("ALT + L", "Window to right half", placing(place.half, "r"))
+o.bind("ALT + K", "Window to top half", placing(place.half, "u"))
+o.bind("ALT + J", "Window to bottom half", placing(place.half, "d"))
+o.bind("ALT + M", "Maximize window", placing(place.maximize))
+o.bind("ALT + C", "Center window at half width", placing(place.center))
+o.bind("SHIFT + ALT + LEFT", "Move window to left monitor", o.workspaces.move_window_to_monitor("l"))
+o.bind("SHIFT + ALT + RIGHT", "Move window to right monitor", o.workspaces.move_window_to_monitor("r"))
+
 -- Startup layout: terminal on workspace 1, browser on workspace 2 --------------
 --
 -- The launchers hand their app to systemd, so Hyprland cannot follow the
