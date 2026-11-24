@@ -103,6 +103,20 @@ if [ ! -f "$SSH_KEY" ]; then
   echo "      ~/dotfiles/scripts/trust-machine.sh $USER@<this machine's address>"
 fi
 
+# Dotfiles pushes go over SSH. The repo is cloned over HTTPS (public, so pulls
+# need no login) and the gh login is the work account, which cannot push here.
+# Pushing works once ~/.ssh/id_ed25519.pub is added to the GitHub account that
+# owns the repo: https://github.com/settings/ssh/new
+DOTFILES_REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DOTFILES_URL="$(git -C "$DOTFILES_REPO" remote get-url origin)"
+if [[ "$DOTFILES_URL" == https://github.com/* ]]; then
+  DOTFILES_PUSH_URL="git@github.com:${DOTFILES_URL#https://github.com/}"
+  if [ "$(git -C "$DOTFILES_REPO" remote get-url --push origin)" != "$DOTFILES_PUSH_URL" ]; then
+    echo "==> Pointing dotfiles pushes at SSH..."
+    git -C "$DOTFILES_REPO" remote set-url --push origin "$DOTFILES_PUSH_URL"
+  fi
+fi
+
 # zsh as the login shell
 ZSH_PATH="$(command -v zsh)"
 if [ "$(getent passwd "$USER" | cut -d: -f7)" != "$ZSH_PATH" ]; then
