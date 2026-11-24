@@ -89,6 +89,9 @@ end
 hl.on("window.active", sync_focus_binds)
 sync_focus_binds(hl.get_active_window())
 
+-- Reachable from `hyprctl eval` for checking and debugging.
+o.personal = { focus_binds = focus_binds }
+
 -- Startup layout: terminal on workspace 1, browser on workspace 2 --------------
 --
 -- The launchers hand their app to systemd, so Hyprland cannot follow the
@@ -96,7 +99,7 @@ sync_focus_binds(hl.get_active_window())
 -- switched off once the first matching window has opened (or after a minute),
 -- so windows opened later land on whatever workspace is in view.
 
-local function open_on_workspace(class, workspace, command)
+function o.personal.open_on_workspace(class, workspace, command)
   local rule = hl.window_rule({ match = { class = class }, workspace = workspace .. " silent" })
   local pending = true
 
@@ -118,12 +121,11 @@ local function open_on_workspace(class, workspace, command)
   hl.exec_cmd(command)
 end
 
--- Kept on `o` so it can be tried without a reboot:
---   hyprctl eval 'o.personal_startup_layout()'
-function o.personal_startup_layout()
-  open_on_workspace("org.omarchy.terminal", 1, "omarchy-launch-terminal")
+-- Try it without a reboot: hyprctl eval 'o.personal.startup_layout()'
+function o.personal.startup_layout()
+  o.personal.open_on_workspace("org.omarchy.terminal", 1, "omarchy-launch-terminal")
   -- Follows the default browser (omarchy default browser <name>).
-  open_on_workspace("(chromium|google-chrome.*)", 2, "omarchy-launch-browser")
+  o.personal.open_on_workspace("(chromium|google-chrome.*)", 2, "omarchy-launch-browser")
 end
 
-hl.on("hyprland.start", o.personal_startup_layout)
+hl.on("hyprland.start", o.personal.startup_layout)
