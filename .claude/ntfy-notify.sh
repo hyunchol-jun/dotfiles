@@ -1,8 +1,18 @@
 #!/bin/bash
 # Send Claude Code notifications to ntfy.sh for iPhone push notifications
-# Topic is a secret URL - treat it like a password
+# The topic is a secret: whoever knows it can read the notifications. It is never kept in
+# this repo. It is read from Agent Deck's secret store, so terminal sessions and Agent Deck
+# nodes post to one topic: the login Keychain on a Mac, an owner-only file on Linux.
+# Store it with `npm run node:ntfy-topic` in ~/projects/agentdeck/daemon.
 
-NTFY_TOPIC="claude-hcjun-8447ba2be44b53d7"
+if [ "$(uname)" = Darwin ]; then
+  NTFY_TOPIC=$(/usr/bin/security find-generic-password -s agentdeck -a ntfy-topic -w 2>/dev/null)
+else
+  NTFY_TOPIC=$(sed -n 's/^ntfy-topic=//p' \
+    "${AGENTDECK_SECRETS_FILE:-$HOME/.local/state/agentdeck/secrets/tokens}" 2>/dev/null)
+fi
+# No topic stored on this machine: nothing to send to.
+[ -n "$NTFY_TOPIC" ] || exit 0
 DEDUP_DIR="$HOME/.claude/.ntfy-sent"
 PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 
