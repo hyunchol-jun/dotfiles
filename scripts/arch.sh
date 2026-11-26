@@ -36,7 +36,9 @@ sudo pacman -S --needed --noconfirm \
   tailscale \
   yazi \
   rclone \
-  visidata
+  visidata \
+  yt-dlp \
+  mpv
 
 # Omarchy ships ttf-jetbrains-mono-nerd-basic, which provides this name and
 # conflicts with the full package, so only install when nothing provides it

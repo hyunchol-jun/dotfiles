@@ -33,6 +33,8 @@ brew "yq"
 brew "poppler"
 brew "visidata"
 brew "duckdb"
+brew "yt-dlp"
+brew "mpv"
 
 # Casks
 cask "ghostty"

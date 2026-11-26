@@ -91,6 +91,30 @@ alias dbt-rw='~/dotfiles/scripts/implentio-custom-db-tunnel.sh -l 9001 -d app -h
 
 alias portfolio-tui='uv run --project ~/projects/portfolio-tui portfolio-tui'
 
+# YouTube without the YouTube site, so there is no feed, sidebar or autoplay.
+#   yt [url]      play in mpv
+#   yt -d [url]   download to ~/Movies/youtube (a playlist gets its own folder)
+# With no url, it uses the one on the clipboard.
+yt() {
+  local download=0 url dir ytdlp
+  [[ "$1" == "-d" ]] && { download=1; shift; }
+  url="${1:-$(pbpaste 2>/dev/null || wl-paste 2>/dev/null)}"
+  if [[ "$url" != http* ]]; then
+    echo "yt: no link given or on the clipboard. usage: yt [-d] [url]" >&2
+    return 1
+  fi
+  # Prefer the Homebrew yt-dlp: an older copy elsewhere on PATH breaks whenever
+  # YouTube changes, and `brew upgrade` only fixes this one.
+  ytdlp="${BREW_PREFIX:+$BREW_PREFIX/bin/}yt-dlp"
+  [[ -x "$ytdlp" ]] || ytdlp=yt-dlp
+  if (( download )); then
+    [[ -d ~/Movies ]] && dir=~/Movies/youtube || dir=~/Videos/youtube
+    "$ytdlp" -P "$dir" -o "%(playlist_title|.)s/%(playlist_index&{} - |)s%(title)s.%(ext)s" "$url"
+  else
+    mpv --script-opts=ytdl_hook-ytdl_path="$ytdlp" "$url"
+  fi
+}
+
 # attach to a remote box's tmux over tailscale.
 # mosh survives IP changes, tailscale path flips (DERP<->direct), and wifi drops,
 # and resumes on its own. its UDP rides inside the tailscale tunnel, so it also works
