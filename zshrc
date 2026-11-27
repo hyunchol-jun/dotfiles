@@ -44,8 +44,6 @@ alias ccfm="claude --dangerously-skip-permissions --model fable --effort medium"
 alias ccox="claude --dangerously-skip-permissions --model opus --effort xhigh"
 alias ccom="claude --dangerously-skip-permissions --model opus --effort max"
 alias cx="codex --yolo"
-alias omp6x="omp --model openai-codex/gpt-6-astra --thinking xhigh"
-alias omp6m="omp --model openai-codex/gpt-6-astra --thinking medium"
 
 # AWS SSO login without opening a browser: prints a URL + code to complete
 # on any machine (open it in an incognito window to use different credentials).

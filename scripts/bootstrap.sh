@@ -7,7 +7,7 @@ echo "==> Detected dotfiles directory: $DOTFILES_DIR"
 
 # Non-interactive shells (ssh) don't source zshrc, so put brew,
 # mise-managed tools (node/npm), and curl-installed binaries
-# (claude, omp, codex) on PATH explicitly
+# (claude, codex) on PATH explicitly
 [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
 command -v mise &>/dev/null && eval "$(mise activate bash --shims)"
 export PATH="$HOME/.local/bin:$PATH"
@@ -124,14 +124,6 @@ elif [ ! -e "$CODEX_CFG" ]; then
   cp "$DOTFILES_DIR/.codex/config.seed.toml" "$CODEX_CFG"
 else
   echo "==> Codex config already present"
-fi
-
-# oh-my-pi (omp)
-if ! command -v omp &>/dev/null; then
-  echo "==> Installing oh-my-pi..."
-  curl -fsSL https://omp.sh/install | sh
-else
-  echo "==> oh-my-pi already installed"
 fi
 
 # TPM (Tmux Plugin Manager)

@@ -36,7 +36,6 @@
     ~/.claude/agent-state.sh: .claude/agent-state.sh
     ~/.claude/output-styles: .claude/output-styles
     ~/.claude/mods: .claude/mods
-    ~/.omp/agent/config.yml: .omp/config.yml
     ~/.codex/notify.sh: .codex/notify.sh
     ~/.codex/AGENTS.md: .codex/AGENTS.md
 
