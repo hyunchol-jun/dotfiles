@@ -49,6 +49,7 @@ cask "docker-desktop"
 cask "hammerspoon"
 cask "tailscale-app"
 cask "wispr-flow"
+cask "iina"
 # Codex desktop app is discontinued upstream (codex-app cask disabled 2027-07-12);
 # the ChatGPT desktop app is its upstream replacement
 cask "chatgpt"
