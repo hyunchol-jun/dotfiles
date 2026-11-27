@@ -109,7 +109,10 @@ yt() {
   [[ -x "$ytdlp" ]] || ytdlp=yt-dlp
   if (( download )); then
     [[ -d ~/Movies ]] && dir=~/Movies/youtube || dir=~/Videos/youtube
-    "$ytdlp" -P "$dir" -o "%(playlist_title|.)s/%(playlist_index&{} - |)s%(title)s.%(ext)s" "$url"
+    # --retry-sleep: without a pause, all ten retries fire at once and a site
+    # that is throttling (Bilibili answers HTTP 567) fails the file every time.
+    "$ytdlp" -P "$dir" --retry-sleep exp=1:30 \
+      -o "%(playlist_title|.)s/%(playlist_index&{:03d} - |)s%(title)s.%(ext)s" "$url"
   else
     mpv --script-opts=ytdl_hook-ytdl_path="$ytdlp" "$url"
   fi
