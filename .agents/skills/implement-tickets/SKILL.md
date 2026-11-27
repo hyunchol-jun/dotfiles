@@ -1,19 +1,19 @@
 ---
 name: implement-tickets
-description: Drive a batch of /to-tickets ticket files to completion — work the frontier in dependency order, one /implement subagent per ticket, stacked on the current branch. Use when a .scratch/<slug>/issues/ directory of NN-slug.md tickets is ready to build.
+description: Drive a batch of /to-tickets ticket files to completion — work the frontier in dependency order, one subagent per ticket, stacked on the current branch. Use when a .scratch/<slug>/issues/ directory of NN-slug.md tickets is ready to build.
 ---
 
 # Implement Tickets
 
 You are the **batch orchestrator**. Take a set of `/to-tickets` local ticket files, order them by
-their blocking edges, and drive each one to completion by **spawning one subagent per ticket that
-runs `/implement`**. The heavy work (TDD cycles, `/code-review`, commits) happens inside each
-subagent and is discarded on return — you keep only compact results. Keeping your own context light
-is an explicit goal.
+their blocking edges, and drive each one to completion by **spawning one subagent per ticket**.
+The heavy work (TDD cycles, `/code-review`, commits) happens inside each subagent and is discarded
+on return — you keep only compact results. Keeping your own context light is an explicit goal.
 
 **The ticket files are the ledger.** Each ticket's `**Status:**` line is the source of truth:
 `ready-for-agent` → `done` (or `blocked — <reason>`). A re-run of this skill is automatically a
-resume: done tickets are skipped.
+resume: done tickets are skipped. Ticket files live on disk only: `.scratch/` is git-ignored, so
+status updates are edits in place and every commit holds code alone.
 
 ## Pre-flight
 
@@ -24,9 +24,10 @@ resume: done tickets are skipped.
    falling back to whichever of main/master exists). On the default branch or detached HEAD → halt
    and tell me to switch to (or create) a working branch. All tickets stack **in place on the
    current branch**; never cut a new branch.
-3. **Tree state.** `git status --porcelain`. If the only changes are the ticket files (and any spec
-   they reference), commit them now as the first batch commit and say so. Any *other* dirty files →
-   halt and ask me whether to stash, commit, or ignore them.
+3. **Clean tree.** `git status --porcelain` must print nothing. Any dirty file → halt and ask me
+   whether to stash, commit, or ignore it.
+4. **Batch base.** Record `<base>` = `git merge-base HEAD <default-branch>`. Every commit in
+   `<base>..HEAD` belongs to the batch, on a first run and on a resume alike.
 
 ## Resolve the ticket set
 
@@ -63,26 +64,27 @@ Never run two subagents at once: they share one working tree. For each ticket in
 3. **Spawn one `general-purpose` subagent, synchronously** (`run_in_background: false`). Prompt it:
 
    > You are implementing one ticket of a stacked batch. Read the ticket file at `<path>` in full —
-   > "What to build" is the end-to-end behaviour, the checkboxes are the acceptance criteria. Then
-   > invoke the `implement` skill and follow it for exactly this ticket's scope: TDD at the seams,
-   > typecheck and single test files regularly. In place of `implement`'s full-suite step, finish
-   > with lint, typecheck, and the **related tests**: the tests your changed files reach (e.g.
-   > `jest --findRelatedTests <changed files>`, `vitest related <changed files>`) plus every test
-   > file you added or edited. A ticket that changes the database schema or migrations adds the
-   > package's full integration suite to its related tests. The orchestrator runs the full suite
-   > once, after the last ticket. Then `code-review`,
-   > then commit to the current branch `<branch>` — you are on the feature branch the caller created
-   > for this stacked work; implement in place, do NOT cut a new branch. In your final commit,
-   > include the ticket file updated: tick each satisfied acceptance criterion and set
-   > `**Status:** done`. Build nothing beyond this ticket's scope — later tickets cover the rest.
-   > Return only: `{ status: done|blocked, commit: <sha>, criteria: <n>/<m> green, review: <one-line
-   > code-review outcome>, notes: <one line> }`. If you cannot get the related tests green or hit a
-   > genuine decision only a human can make, commit nothing further, set the ticket's Status line to
-   > `blocked — <reason>`, and return status blocked with the reason in notes.
+   > "What to build" is the end-to-end behaviour, the checkboxes are the acceptance criteria. Build
+   > exactly this ticket's scope: call the Skill tool with `tdd` at the seams, and run typecheck and
+   > single test files regularly. Finish with lint, typecheck, and the **related tests**: the tests
+   > your changed files reach (e.g. `jest --findRelatedTests <changed files>`, `vitest related
+   > <changed files>`) plus every test file you added or edited. A ticket that changes the database
+   > schema or migrations adds the package's full integration suite to its related tests. The
+   > orchestrator runs the full suite once, after the last ticket. Then call the Skill tool with
+   > `code-review` to review the work, then commit to the current branch `<branch>` — you are on the
+   > feature branch the caller created for this stacked work; implement in place, do NOT cut a new
+   > branch. The commit message stands on its own: it describes the change and its motivation, with
+   > no ticket, spec, or plan references. After committing, update the ticket file on disk: tick
+   > each satisfied acceptance criterion and set `**Status:** done`. The ticket file is git-ignored
+   > and stays out of the commit. Build nothing beyond this ticket's scope — later tickets cover the
+   > rest. Return only: `{ status: done|blocked, commit: <sha>, criteria: <n>/<m> green, review:
+   > <one-line code-review outcome>, notes: <one line> }`. If you cannot get the related tests green
+   > or hit a genuine decision only a human can make, commit nothing further, set the ticket's
+   > Status line to `blocked — <reason>`, and return status blocked with the reason in notes.
 
 4. **Handle the result.**
-   - `done` → verify the ticket file now says `done` (fix it and amend/commit if the subagent
-     forgot), record the compact result, continue.
+   - `done` → verify the ticket file now says `done` (edit it in place if the subagent forgot),
+     record the compact result, continue.
    - `blocked` (or the subagent dies) → make sure the ticket's Status line records the blockage,
      relay the reason to me, and **pause the batch** — a later ticket may depend on it. Continue
      only on my direction; if the blocked attempt left commits on the branch, ask me before
@@ -96,12 +98,12 @@ previous one's HEAD.
 Per-ticket runs cover only related tests, so this is the batch's one full-suite run. Run it when the
 main loop finishes; a paused batch runs it on the resume that finishes the loop.
 
-1. **Find the touched packages** from `git diff --name-only <first-batch-commit>^..HEAD`.
+1. **Find the touched packages** from `git diff --name-only <base>..HEAD`.
 2. **Run each package's full suite** (its `test` script), output redirected to a log in your
    scratchpad. Read back only the summary lines and failing test names — keep your context light.
 3. **Green** → record it for the summary. Done.
 4. **Red** → attribute each failure to the batch commit that caused it: read the failure against
-   `git log -p <first-batch-commit>^..HEAD` for the code the failing test reaches. A failure no
+   `git log -p <base>..HEAD` for the code the failing test reaches. A failure no
    batch commit reaches is pre-existing or flaky: report it and leave it.
 5. **Fix each culprit**, strictly sequentially, with one `general-purpose` subagent per culprit
    commit. Prompt it with the failing tests, the culprit commit sha, and its ticket path; it makes
@@ -119,6 +121,6 @@ When all tickets are done, skipped, or the batch is paused:
 - Per-ticket status with each compact result (commit, criteria, review outcome).
 - The full-suite result: green, or what failed, which fix commits landed, and what was reported as
   pre-existing.
-- The branch name and `git log <first-batch-commit>^..HEAD --oneline`.
+- The branch name and `git log <base>..HEAD --oneline`.
 - What remains blocked/skipped and why.
 - Nothing is pushed or opened as a PR unless I explicitly ask.

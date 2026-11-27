@@ -13,7 +13,7 @@ SKILLS="grill-with-docs improve-codebase-architecture setup-matt-pocock-skills \
 to-spec to-tickets implement wayfinder prototype research tdd \
 domain-modeling codebase-design code-review resolving-merge-conflicts \
 grill-me handoff wait-what grilling writing-for-agents implement-tickets \
-wt tmux-split"
+implement-spec pr retro wt tmux-split"
 
 for s in $SKILLS; do
   if [ -e "$DST/$s" ]; then
