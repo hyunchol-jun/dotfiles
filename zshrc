@@ -10,6 +10,7 @@ fi
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 export PATH=~/bin:~/.local/bin:$PATH
+export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
 
 # Prompt
 autoload -Uz vcs_info
