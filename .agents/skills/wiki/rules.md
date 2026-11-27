@@ -48,7 +48,7 @@ A question the wiki cannot answer is a prompt to find a source and ingest it, wi
 
 ## File
 
-Saves a finished answer, research result or conversation into the wiki. This is also how the `/wiki-note` command saves.
+Saves a finished answer, research result or conversation into the wiki.
 
 1. Read `wiki/index.md`. If a page already covers the topic, update that page; otherwise create one.
 2. Link it to related pages in both directions.

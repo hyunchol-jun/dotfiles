@@ -1,12 +1,6 @@
 {
   "version": 1,
   "skills": {
-    "claude-handoff": {
-      "source": "mattpocock/skills",
-      "sourceType": "github",
-      "skillPath": "skills/in-progress/claude-handoff/SKILL.md",
-      "computedHash": "e329481fa7f9d19c91dae3db1bf1799aeaf41d2c5298c8fc737ee4500b0e50c6"
-    },
     "code-review": {
       "source": "mattpocock/skills",
       "sourceType": "github",
