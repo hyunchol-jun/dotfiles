@@ -1,5 +1,5 @@
 modelRoles:
-  default: openai-codex/gpt-5.6-sol
+  default: openai-codex/gpt-6-astra:xhigh
 tools:
   approvalMode: yolo
 symbolPreset: nerd
