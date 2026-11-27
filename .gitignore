@@ -15,6 +15,10 @@ github-copilot/
 config/rclone/
 config/kis-hoga/
 config/gh/
+config/gcloud/
+config/portfolio-tui/
+config/e2e/
+config/uv/
 
 # Codex app rewrites this with machine-specific state; seeded from .codex/config.seed.toml
 .codex/config.toml
