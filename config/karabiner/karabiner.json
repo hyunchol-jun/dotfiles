@@ -31,6 +31,12 @@
                                         "name": "launcher_mode",
                                         "type": "variable_if",
                                         "value": 1
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
                                     }
                                 ],
                                 "from": {
@@ -76,7 +82,15 @@
                                     },
                                     { "shell_command": "open -a 'Notes.app'" }
                                 ],
-                                "type": "basic"
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ]
                             },
                             {
                                 "conditions": [
@@ -84,6 +98,12 @@
                                         "name": "launcher_mode",
                                         "type": "variable_if",
                                         "value": 1
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
                                     }
                                 ],
                                 "from": {
@@ -129,7 +149,15 @@
                                     },
                                     { "shell_command": "open -a 'Ghostty.app'" }
                                 ],
-                                "type": "basic"
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ]
                             },
                             {
                                 "conditions": [
@@ -137,6 +165,12 @@
                                         "name": "launcher_mode",
                                         "type": "variable_if",
                                         "value": 1
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
                                     }
                                 ],
                                 "from": {
@@ -182,7 +216,15 @@
                                     },
                                     { "shell_command": "open -a 'Roam.app'" }
                                 ],
-                                "type": "basic"
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ]
                             },
                             {
                                 "conditions": [
@@ -190,6 +232,12 @@
                                         "name": "launcher_mode",
                                         "type": "variable_if",
                                         "value": 1
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
                                     }
                                 ],
                                 "from": {
@@ -235,7 +283,15 @@
                                     },
                                     { "shell_command": "open -a 'google chrome.app'" }
                                 ],
-                                "type": "basic"
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ]
                             },
                             {
                                 "conditions": [
@@ -243,6 +299,12 @@
                                         "name": "launcher_mode",
                                         "type": "variable_if",
                                         "value": 1
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
                                     }
                                 ],
                                 "from": {
@@ -288,7 +350,15 @@
                                     },
                                     { "shell_command": "open -a 'Dictionary.app'" }
                                 ],
-                                "type": "basic"
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ]
                             },
                             {
                                 "conditions": [
@@ -296,6 +366,12 @@
                                         "name": "launcher_mode",
                                         "type": "variable_if",
                                         "value": 1
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
                                     }
                                 ],
                                 "from": {
@@ -341,7 +417,15 @@
                                     },
                                     { "shell_command": "open -a 'Messages.app'" }
                                 ],
-                                "type": "basic"
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ]
                             },
                             {
                                 "conditions": [
@@ -349,6 +433,12 @@
                                         "name": "launcher_mode",
                                         "type": "variable_if",
                                         "value": 1
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
                                     }
                                 ],
                                 "from": {
@@ -394,7 +484,15 @@
                                     },
                                     { "shell_command": "open -a 'Anki.app'" }
                                 ],
-                                "type": "basic"
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ]
                             },
                             {
                                 "conditions": [
@@ -402,6 +500,12 @@
                                         "name": "launcher_mode",
                                         "type": "variable_if",
                                         "value": 1
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
                                     }
                                 ],
                                 "from": {
@@ -447,7 +551,15 @@
                                     },
                                     { "shell_command": "open -a 'Kumospace.app'" }
                                 ],
-                                "type": "basic"
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ]
                             },
                             {
                                 "conditions": [
@@ -455,6 +567,12 @@
                                         "name": "launcher_mode",
                                         "type": "variable_if",
                                         "value": 1
+                                    },
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
                                     }
                                 ],
                                 "from": {
@@ -500,7 +618,15 @@
                                     },
                                     { "shell_command": "open -a 'Slack.app'" }
                                 ],
-                                "type": "basic"
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.ScreenSharing$"
+                                        ],
+                                        "type": "frontmost_application_unless"
+                                    }
+                                ]
                             }
                         ]
                     }
