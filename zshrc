@@ -319,6 +319,14 @@ unset __or_env __or_line
 
 # ---- hive: apiaryOs-enabled Claude Code sessions (see ~/.claude/mods/hive/README.md) ----
 # `hive` (bin/hive) = apiaryOs live + capture on, tinted. Plain `claude` loads the same mod so it
-# can refuse apiaryOs tools and pin the capture kill switch; one line, same in bash and zsh.
-claude() { APIARY_CAPTURE_DISABLED=1 agentdeck-claude --plugin-dir ~/.claude/mods/hive "$@"; }
+# can refuse apiaryOs tools and pin the capture kill switch; same in bash and zsh.
+# It starts through agentdeck-claude (Agent Deck's launcher, linked onto PATH per machine) so the
+# session is mirrored in the app; on a machine without the link it runs plain claude.
+claude() {
+  if command -v agentdeck-claude >/dev/null 2>&1; then
+    APIARY_CAPTURE_DISABLED=1 agentdeck-claude --plugin-dir ~/.claude/mods/hive "$@"
+  else
+    APIARY_CAPTURE_DISABLED=1 command claude --plugin-dir ~/.claude/mods/hive "$@"
+  fi
+}
 export PATH="$HOME/.claude/mods/hive/bin:$PATH"
