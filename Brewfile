@@ -1,3 +1,6 @@
+# Taps
+tap "anomalyco/tap"
+
 # Formulae
 brew "neovim"
 brew "tmux"
@@ -11,7 +14,6 @@ brew "tmux"
 brew "mosh", args: ["HEAD"]
 brew "htop"
 brew "git"
-brew "tldr"
 brew "lazygit"
 brew "postgresql@16"
 brew "ripgrep"
@@ -49,6 +51,8 @@ cask "docker-desktop"
 cask "hammerspoon"
 cask "tailscale-app"
 cask "wispr-flow"
+# Local dictation, on trial as a wispr-flow replacement
+cask "anomalyco/tap/hex"
 cask "iina"
 # Codex desktop app is discontinued upstream (codex-app cask disabled 2027-07-12);
 # the ChatGPT desktop app is its upstream replacement

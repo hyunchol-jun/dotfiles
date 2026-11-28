@@ -17,7 +17,6 @@ sudo pacman -S --needed --noconfirm \
   tmux \
   htop \
   git \
-  tldr \
   lazygit \
   postgresql \
   typescript-language-server \
@@ -69,7 +68,8 @@ if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
   yay -S --needed --noconfirm \
     obsidian \
     dbeaver \
-    slack-desktop
+    slack-desktop \
+    hex-bin
   "$(dirname "${BASH_SOURCE[0]}")/chrome.sh"
 fi
 
