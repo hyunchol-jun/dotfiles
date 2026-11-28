@@ -69,6 +69,13 @@ Per-project overrides: add a `.mise.toml` in any project directory to pin specif
 
 Bootstrap installs them. To add one later, press `prefix + I` inside tmux.
 
+### Hex dictation
+
+Bootstrap installs Hex. Open it once, grant the microphone and accessibility
+permissions, then run `scripts/hex.sh`: it downloads the English and Korean
+speech models and applies the settings and vocabulary in `hex/` (Option+Space
+starts and stops a dictation). Re-run it after editing anything in `hex/`.
+
 ### Dropbox via rclone NFS
 
 1. Run `rclone config` to set up Dropbox OAuth (remote name: `dropbox-implentio`)

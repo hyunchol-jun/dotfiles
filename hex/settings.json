@@ -1,0 +1,10 @@
+{
+  "dictation_hotkey": "option+space",
+  "shortcut_mode": "toggle",
+  "sound_theme": "wood",
+  "sound_effect_volume": 0.25,
+  "labs.learn_from_corrections": true,
+  "labs.screen_vocabulary": true,
+  "transcription.model": "parakeet_unified_en",
+  "transcription.language": "en"
+}

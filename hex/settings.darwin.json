@@ -1,0 +1,7 @@
+{
+  "keyboard_model_switching.enabled": true,
+  "keyboard_model_switching.mappings": {
+    "com.apple.keylayout.ABC": { "model": "parakeet_unified_en", "language": "en" },
+    "com.apple.inputmethod.Korean.2SetKorean": { "model": "qwen3_asr06_b", "language": "ko" }
+  }
+}
